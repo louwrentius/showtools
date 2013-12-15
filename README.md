@@ -51,6 +51,8 @@ The script shows you:
 * How many pending sectors there are (bad sectors)
 * How many CRC errors the device has seen (cable issues)
 
+![showsmart][3]
+
 There may be more indicators included which might be relevant.
 
 [3]: http://louwrentius.com/static/images/showsmart.png
