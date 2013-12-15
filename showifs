@@ -1,0 +1,177 @@
+#!/usr/bin/python
+#
+# Author: Louwrentius
+#
+# Requirement: ethtool 
+#
+# Version: 1.0
+#
+
+import re
+import subprocess
+import sys
+
+#
+# Get all network interfaces
+#
+dev = open('/proc/net/dev', 'r').readlines()
+ethtoolerror = False
+
+def get_interface_data(interface):
+    raw_data = subprocess.Popen(['ifconfig', interface], stdout=subprocess.PIPE).communicate()[0]
+    return raw_data
+
+def get_link_status(interface):
+    try:
+        raw_data = subprocess.Popen(['ethtool', interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
+    except OSError:
+        global ethtoolerror
+        ethtoolerror = True
+        return ""
+    match = re.search('Link\ detected:\ (\S+)', raw_data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_driver_data(interface):
+    try:
+        raw_data = subprocess.Popen(['ethtool', '-i',  interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
+    except OSError:
+        global ethtoolerror
+        ethtoolerror = True
+        return ""
+    return raw_data
+
+def get_driver(data):
+    match = re.search('driver:\ (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_firmware(data):
+    match = re.search('firmware-version:\ (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_ip_address(data):
+    match = re.search('inet addr:(\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_mac_address(data):
+    match = re.search('HWaddr (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+    
+def get_interface_type(data):
+    match = re.search('encap:(\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+    
+#
+# Retrieve data for the network interface 
+#
+def process_interface(interface):
+
+    iface = []
+    
+    raw_ifconfig = get_interface_data(interface)
+    raw_ethtool = get_driver_data(interface)
+
+    ip = get_ip_address(raw_ifconfig)
+    mac = get_mac_address(raw_ifconfig)
+    itype = get_interface_type(raw_ifconfig)
+    status = get_link_status(interface)
+    driver = get_driver(raw_ethtool)
+    firmware = get_firmware(raw_ethtool)
+
+    iface = [ interface, status, ip, mac, itype, driver, firmware ]
+    return iface
+ 
+def get_interfaces():
+    interfaces = []
+    for line in dev[2:]:
+        data = line.split(':')
+        interfaces.append(data[0].strip())
+        interfaces.sort()
+    return interfaces        
+
+#
+# Get collumn size for proper table formatting
+# Find the biggest string in a collumn
+#
+def get_collumn_size(table):
+
+    col_count = len(table[0])
+    col_widths = []
+    for i in xrange(col_count):
+        collumn = []
+        for row in table:
+            collumn.append(len(row[i]))
+        length = max(collumn)
+        col_widths.append(length)
+    return col_widths            
+
+def display_table(table):
+    col_widths = get_collumn_size(table)
+
+    # Dirty hack to get a closing pipe character at the end of the row
+    col_widths.append( 1 )
+
+    # Some values to calculate the actual table with, including spacing 
+    spacing = 1
+    delimiter = 3
+    table_width=(sum(col_widths) + len(col_widths)*spacing*delimiter)-delimiter
+
+    format = ""
+    for col in col_widths:
+        form = "| %-" + str(col) + "s "
+        format += form
+
+    #
+    # Print header
+    # 
+    header = table[0]
+    header.append("")
+    print '%s' % '-'*table_width
+    print format % tuple(header)
+    print '%s' % '-'*table_width
+
+    #
+    # Drop header from table data  
+    # 
+    table.pop(0)
+
+
+    #
+    # Print actual table contents
+    #
+    for row in table:
+        row.append("")
+        print format % tuple(row)
+    print '%s' % '-'*table_width
+
+    if ethtoolerror:
+        print "WARNING: ethtool not installed or not working!"
+
+#
+# Define table and add header as first row
+# The header also defines the table / collumn width
+#
+        
+table = []
+header = [ "INTERFACE", "LINK", "IP ADDRESS", "MAC ADDRESS", "TYPE", "DRIVER", "FIRMWARE" ]
+table.append(header)
+
+#
+# Main: get all interfaces and their data and display it in a table
+#
+
+for interface in get_interfaces():
+    table.append(process_interface(interface))
+
+display_table(table)

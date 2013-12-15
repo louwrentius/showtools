@@ -1,0 +1,210 @@
+#!/usr/bin/python
+#
+# Author: Louwrentius
+#
+# Requirement: hdparm
+#
+# Version: 1.0
+#
+
+import re
+import subprocess
+import sys
+import os
+
+hdparmerror = False
+
+pcidevices = ""
+diskbypathdata = ""
+
+#
+# Get all network interfaces
+#
+
+def get_block_devices():
+    devicepath = "/sys/block"
+    diskdevices = os.listdir(devicepath)
+    return diskdevices
+
+def get_pci_devices():
+    global pcidevices
+    pcidevices = subprocess.Popen(['lspci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+
+def get_disk_paths():
+    global diskbypathdata
+    diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+    
+def get_disk_deviceid(diskdevice):
+    for item in diskbypathdata.splitlines():
+        if diskdevice in item:
+            parameter = 'pci-0000:'
+            regex = re.compile(parameter + '(.*)')   
+            match = regex.search(item)
+            if match:
+                model = match.group(1).split(".")[0]
+                return model
+
+def get_disk_path(diskdevice):
+    for item in diskbypathdata.splitlines():
+        if diskdevice in item:
+            parameter = 'scsi-'
+            regex = re.compile(parameter + '(.*)')   
+            match = regex.search(item)
+            if match:
+                model = match.group(1).split(" ")[0]
+                return model
+            
+def get_pci_device_name(diskdevice):
+    deviceid = get_disk_deviceid(diskdevice)
+
+    regex = re.compile(deviceid + '(.*)')   
+    match = regex.search(pcidevices)
+    if match:
+        model = match.group(1).split(":")[1]
+        return model
+         
+def get_parameter_from_hdparm(data,parameter):
+    regex = re.compile(parameter + '(.*)')   
+    match = regex.search(data)
+    if match:
+        model = match.group(1).split(",")[0]
+        return model.strip()
+    return ''
+
+def get_disk_model(hdparmdata):
+    parameter = 'Model Number:' 
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+
+def get_disk_serial(hdparmdata):
+    parameter = 'Serial Number:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+
+def get_disk_size(hdparmdata):
+    parameter = 'device size with M = 1000\*1000:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    sizeinmb = match.split(" ")[0]
+    sizeingb = int(sizeinmb) / 1000
+    return str(sizeingb)
+
+def get_disk_firmware(hdparmdata):
+    parameter = 'Firmware Revision:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+        
+
+def get_hdparm_data(device):
+    try:
+        rawdata = subprocess.Popen(['hdparm', '-I', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        hdparmdata = rawdata[0]
+        errordata = rawdata[1]
+        if errordata:
+            return None
+        return hdparmdata
+    except OSError:
+        global hdparmerror
+        hdparmerror = True
+        return ""
+
+def process_device(diskdevice):
+
+    device = []
+
+    fullpath = "/dev/" + diskdevice
+
+    diskdata = get_hdparm_data(fullpath)
+    
+    if not diskdata:
+        return None
+    
+    diskmodel = get_disk_model(diskdata)
+    diskserial = get_disk_serial(diskdata)
+    disksize = get_disk_size(diskdata)
+    diskfw = get_disk_firmware(diskdata)
+    pcidevice = get_pci_device_name(diskdevice)
+    devicepath = get_disk_path(diskdevice)
+
+    device = [ diskdevice, diskmodel, diskserial, disksize, diskfw, pcidevice, devicepath ]
+
+    return device
+
+#
+# Get collumn size for proper table formatting
+# Find the biggest string in a collumn
+#
+def get_collumn_size(table):
+
+    col_count = len(table[0])
+    col_widths = []
+    for i in xrange(col_count):
+        collumn = []
+        for row in table:
+            collumn.append(len(row[i]))
+        length = max(collumn)
+        col_widths.append(length)
+    return col_widths            
+
+def display_table(table):
+    col_widths = get_collumn_size(table)
+
+    # Dirty hack to get a closing pipe character at the end of the row
+    col_widths.append( 1 )
+
+    # Some values to calculate the actual table with, including spacing 
+    spacing = 1
+    delimiter = 3
+    table_width=(sum(col_widths) + len(col_widths)*spacing*delimiter)-delimiter
+
+    format = ""
+    for col in col_widths:
+        form = "| %-" + str(col) + "s "
+        format += form
+
+    #
+    # Print header
+    # 
+    header = table[0]
+    header.append("")
+    print '%s' % '-'*table_width
+    print format % tuple(header)
+    print '%s' % '-'*table_width
+
+    #
+    # Drop header from table data  
+    # 
+    table.pop(0)
+
+    #
+    # Print actual table contents
+    #
+    for row in table:
+        row.append("")
+        print format % tuple(row)
+    print '%s' % '-'*table_width
+
+    if hdparmerror:
+        print "ERROR: hdparm not installed or not working!"
+
+#
+# Define table and add header as first row
+# The header also defines the table / collumn width
+#
+        
+table = []
+header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE PATH" ]
+table.append(header)
+
+#
+# Main: get all interfaces and their data and display it in a table
+#
+
+get_pci_devices()
+get_disk_paths()
+
+for device in get_block_devices():
+    devicedata = process_device(device)
+    if devicedata:
+        table.append(devicedata)
+
+display_table(table)

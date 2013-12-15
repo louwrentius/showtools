@@ -1,0 +1,218 @@
+#!/usr/bin/python
+#
+# Author: Louwrentius
+#
+# Requirement: smart
+#
+# Version: 1.0
+#
+
+import re
+import subprocess
+import sys
+import os
+
+smarterror = False
+
+pcidevices = ""
+diskbypathdata = ""
+
+#
+# Get all network interfaces
+#
+
+def get_block_devices():
+    devicepath = "/sys/block"
+    diskdevices = os.listdir(devicepath)
+    return diskdevices
+
+def get_disk_paths():
+    global diskbypathdata
+    diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+
+def is_real_device(device):
+    for item in diskbypathdata.splitlines():
+        if device in item:
+            return True
+    return False
+         
+
+def get_parameter_from_smart(data,parameter,distance):
+    regex = re.compile(parameter + '(.*)')   
+    match = regex.search(data)
+    if match:
+        try:
+            model = match.group(1).split("   ")[distance].split(" ")[1]
+           # model = match.group(1)
+            return str(model)
+        except OSError:
+            print "An error happened"
+            return ""
+    return ''
+
+def get_power_on_hours(smartdata):
+    parameter = 'Power_On_Hours'
+    distance = 12
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_disk_temperature(smartdata):
+    parameter = 'Temperature_Celsius'
+    distance = 10
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_reallocatedsector(smartdata):
+    parameter = 'Reallocated_Sector_Ct'
+    distance = 9
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_reallocatedsectorevent(smartdata):
+    parameter = 'Reallocated_Event_Count'
+    distance = 9
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_udma_crc_error(smartdata):
+    parameter = 'UDMA_CRC_Error_Count'
+    distance = 10
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_pending_sector(smartdata):
+    parameter1 = 'Total_Pending_Sectors'
+    parameter2 = 'Current_Pending_Sector'
+    distance1 = 10
+    distance2 = 9
+    match = get_parameter_from_smart(smartdata,parameter1,distance1)
+    if not match:
+        match = get_parameter_from_smart(smartdata,parameter2,distance2)
+    return match
+
+
+
+def get_smart_data(device):
+    try:
+        rawdata = subprocess.Popen(['smartctl', '-a', '-d','ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        smartdata = rawdata[0]
+        errordata = rawdata[1]
+        if errordata:
+            return None
+        return smartdata
+    except OSError:
+        global smarterror
+        smarterror = True
+        return ""
+
+def process_device(diskdevice):
+
+    device = []
+
+    fullpath = "/dev/" + diskdevice
+
+    diskdata = get_smart_data(fullpath)
+    #print "Diskdata: " + str(diskdata)
+    
+    if not diskdata:
+        return None
+    
+
+    disktemp = get_disk_temperature(diskdata)
+    diskpoweronhours = get_power_on_hours(diskdata)
+    #print "- Disktemp: " + disktemp
+    diskreallocatedsector = get_reallocatedsector(diskdata)
+    #print "- REALLOC : " + diskreallocatedsector
+    diskreallocatedevent = get_reallocatedsectorevent(diskdata)
+    diskcurrentpending = get_pending_sector(diskdata)
+    #print "- Pending: " + diskcurrentpending
+    diskudmacrcerror = get_udma_crc_error(diskdata)
+    
+    
+    
+
+    
+
+    device = [ diskdevice, disktemp, diskpoweronhours, diskreallocatedsector, diskcurrentpending, diskudmacrcerror ]
+
+    return device
+
+#
+# Get collumn size for proper table formatting
+# Find the biggest string in a collumn
+#
+def get_collumn_size(table):
+
+    col_count = len(table[0])
+    col_widths = []
+    for i in xrange(col_count):
+        collumn = []
+        for row in table:
+            collumn.append(len(row[i]))
+        length = max(collumn)
+        col_widths.append(length)
+    return col_widths            
+
+def display_table(table):
+    col_widths = get_collumn_size(table)
+
+    # Dirty hack to get a closing pipe character at the end of the row
+    col_widths.append( 1 )
+
+    # Some values to calculate the actual table with, including spacing 
+    spacing = 1
+    delimiter = 3
+    table_width=(sum(col_widths) + len(col_widths)*spacing*delimiter)-delimiter
+
+    format = ""
+    for col in col_widths:
+        form = "| %" + str(col) + "s "
+        format += form
+
+    #
+    # Print header
+    # 
+    header = table[0]
+    header.append("")
+    print '%s' % '-'*table_width
+    print format % tuple(header)
+    print '%s' % '-'*table_width
+
+    #
+    # Drop header from table data  
+    # 
+    table.pop(0)
+
+    #
+    # Print actual table contents
+    #
+    for row in table:
+        row.append("")
+        print format % tuple(row)
+    print '%s' % '-'*table_width
+
+    if smarterror:
+        print "ERROR: smart not installed or not working!"
+
+#
+# Define table and add header as first row
+# The header also defines the table / collumn width
+#
+        
+table = []
+header = [ "DEVICE", "TEMP", "POWERON", "REALLOC.", "PENDING", "CRC ERR."  ]
+table.append(header)
+
+#
+# Main: get all interfaces and their data and display it in a table
+#
+
+get_disk_paths()
+
+for device in get_block_devices():
+    if is_real_device(device):
+        devicedata = process_device(device)
+        if devicedata:
+            table.append(devicedata)
+
+display_table(table)
