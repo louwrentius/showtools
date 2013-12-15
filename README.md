@@ -1,9 +1,11 @@
 # showtools
 
-Assorted Linux targeted python or shell scripts that show system information, such as:
+Assorted Linux oriented Python scripts that show system information, such as:
 
-- All network interfaces and some of their propertis
+- All network interfaces and some of their properties
 - All storage devices (hdd/sdd) and some of their properties (SMART)
+
+All scripts use the same underlying mechanism to display data in a table format that is dynamically generated based on the size of the content.
 
 # Showifs
 
