@@ -7,15 +7,26 @@
 # Version: 1.0
 #
 
-import re
-import subprocess
-import sys
-import os
+import re, subprocess, sys, os, argparse
 
 hdparmerror = False
-
 pcidevices = ""
 diskbypathdata = ""
+diskbyiddata = ""
+
+#
+# Parse command line options
+#
+
+parser = argparse.ArgumentParser(description='Show detailed parameters of disks or network interfaces in the form of an text-based table.')
+parser.add_argument("-m", "--model", action="store_true", help="Device model."  )
+parser.add_argument("-S", "--serial", action="store_true", help="Device serial number." )
+parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes." )
+parser.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
+parser.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected." )
+parser.add_argument("-p", "--pcipath", action="store_true", help="PCI device path of the device" )
+parser.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
+args = parser.parse_args()
 
 #
 # Get all network interfaces
@@ -30,9 +41,13 @@ def get_pci_devices():
     global pcidevices
     pcidevices = subprocess.Popen(['lspci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
 
-def get_disk_paths():
+def get_all_disk_paths():
     global diskbypathdata
     diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+
+def get_all_disk_wwns():
+    global diskbyiddata
+    diskbyiddata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-id'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
     
 def get_disk_deviceid(diskdevice):
     for item in diskbypathdata.splitlines():
@@ -47,16 +62,27 @@ def get_disk_deviceid(diskdevice):
 def get_disk_path(diskdevice):
     for item in diskbypathdata.splitlines():
         if diskdevice in item:
-            parameter = 'scsi-'
+            parameter = 'pci-'
             regex = re.compile(parameter + '(.*)')   
             match = regex.search(item)
             if match:
-                model = match.group(1).split(" ")[0]
+                model = match.group(0).split(" ")[0]
                 return model
+
+def get_disk_wwn(diskdevice):
+    for item in diskbyiddata.splitlines():
+        if diskdevice in item:
+            if "wwn" in item:
+                parameter = 'wwn'
+                regex = re.compile(parameter + '(.*)')   
+                match = regex.search(item)
+                if match:
+                    model = match.group(0).split(" ")[0]
+                    return model
+    return "Not found"
             
 def get_pci_device_name(diskdevice):
     deviceid = get_disk_deviceid(diskdevice)
-
     regex = re.compile(deviceid + '(.*)')   
     match = regex.search(pcidevices)
     if match:
@@ -124,8 +150,9 @@ def process_device(diskdevice):
     diskfw = get_disk_firmware(diskdata)
     pcidevice = get_pci_device_name(diskdevice)
     devicepath = get_disk_path(diskdevice)
+    devicewwn = get_disk_wwn(diskdevice)
 
-    device = [ diskdevice, diskmodel, diskserial, disksize, diskfw, pcidevice, devicepath ]
+    device = [ diskdevice, diskmodel, diskserial, disksize, diskfw, pcidevice, devicepath, devicewwn ]
 
     return device
 
@@ -192,7 +219,7 @@ def display_table(table):
 #
         
 table = []
-header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE PATH" ]
+header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE BY PATH", "World Wide Name" ]
 table.append(header)
 
 #
@@ -200,7 +227,8 @@ table.append(header)
 #
 
 get_pci_devices()
-get_disk_paths()
+get_all_disk_paths()
+get_all_disk_wwns()
 
 for device in get_block_devices():
     devicedata = process_device(device)
