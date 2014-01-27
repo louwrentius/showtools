@@ -21,39 +21,45 @@ header = []
 # Parse command line options
 #
 
-parser = argparse.ArgumentParser(description='Show detailed parameters of disks or network interfaces in the form of an text-based table.')
+parser = argparse.ArgumentParser(description='Show detailed storage device information in ASCII table format')
 parser.add_argument("-m", "--model", action="store_true", help="Device model.", default="store_true"  )
 parser.add_argument("-S", "--serial", action="store_true", help="Device serial number." )
-parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes.", default="store_true" )
+parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes." )
 parser.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
 parser.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected." )
-parser.add_argument("-p", "--pcipath", action="store_true", help="PCI device path of the device" )
+parser.add_argument("-p", "--pcipath", action="store_true", help="/dev/disk/by-path/ ID of the device" )
 parser.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
+parser.add_argument("-o", "--scsi", action="store_true", help="/by-id/scsi" )
 args = parser.parse_args()
 
 
-header.append("DEVICE")
+def init_header():
 
-if args.model:
-    header.append("MODEL")
+    header.append("DEVICE")
 
-if args.serial:
-    header.append("SERIAL NUMBER")
+    if args.model:
+        header.append("MODEL")
 
-if args.size:
-    header.append("SIZE IN GB")
+    if args.serial:
+        header.append("SERIAL NUMBER")
 
-if args.firmware:
-    header.append("FIRMWARE")
+    if args.size:
+        header.append("SIZE IN GB")
 
-if args.controller:
-    header.append("CONTROLLER")
+    if args.firmware:
+        header.append("FIRMWARE")
 
-if args.pcipath:
-    header.append("PCI PATH")
+    if args.controller:
+        header.append("CONTROLLER")
 
-if args.wwn:
-    header.append("WORLD WIDE NAME")
+    if args.pcipath:
+        header.append("/DEV/DISK/BY-PATH")
+
+    if args.wwn:
+        header.append("/DEV/DISK/BY-ID/WWN*")
+
+    if args.scsi:
+        header.append("/DEV/DISK/BY-ID/SCSI*")
 
 #
 # Get all network interfaces
@@ -101,6 +107,18 @@ def get_disk_wwn(diskdevice):
         if diskdevice in item:
             if "wwn" in item:
                 parameter = 'wwn'
+                regex = re.compile(parameter + '(.*)')   
+                match = regex.search(item)
+                if match:
+                    model = match.group(0).split(" ")[0]
+                    return model
+    return "Not found"
+
+def get_disk_scsi(diskdevice):
+    for item in diskbyiddata.splitlines():
+        if diskdevice in item:
+            if "scsi" in item:
+                parameter = 'scsi'
                 regex = re.compile(parameter + '(.*)')   
                 match = regex.search(item)
                 if match:
@@ -201,6 +219,10 @@ def process_device(diskdevice):
         devicewwn = get_disk_wwn(diskdevice)
         device.append(devicewwn)
 
+    if args.scsi:
+        devicescsi = get_disk_scsi(diskdevice)
+        device.append(devicescsi)
+
     return device
 
 #
@@ -275,6 +297,7 @@ table.append(header)
 get_pci_devices()
 get_all_disk_paths()
 get_all_disk_wwns()
+init_header()
 
 for device in get_block_devices():
     devicedata = process_device(device)
