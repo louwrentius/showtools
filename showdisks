@@ -14,6 +14,9 @@ pcidevices = ""
 diskbypathdata = ""
 diskbyiddata = ""
 
+#header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE BY PATH", "World Wide Name" ]
+header = []
+
 #
 # Parse command line options
 #
@@ -27,6 +30,30 @@ parser.add_argument("-c", "--controller", action="store_true", help="Controller 
 parser.add_argument("-p", "--pcipath", action="store_true", help="PCI device path of the device" )
 parser.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
 args = parser.parse_args()
+
+
+header.append("DEVICE")
+
+if args.model:
+    header.append("MODEL")
+
+if args.serial:
+    header.append("SERIAL NUMBER")
+
+if args.size:
+    header.append("SIZE IN GB")
+
+if args.firmware:
+    header.append("FIRMWARE")
+
+if args.controller:
+    header.append("CONTROLLER")
+
+if args.pcipath:
+    header.append("PCI PATH")
+
+if args.wwn:
+    header.append("WORLD WIDE NAME")
 
 #
 # Get all network interfaces
@@ -143,16 +170,42 @@ def process_device(diskdevice):
     
     if not diskdata:
         return None
-    
-    diskmodel = get_disk_model(diskdata)
-    diskserial = get_disk_serial(diskdata)
-    disksize = get_disk_size(diskdata)
-    diskfw = get_disk_firmware(diskdata)
-    pcidevice = get_pci_device_name(diskdevice)
-    devicepath = get_disk_path(diskdevice)
-    devicewwn = get_disk_wwn(diskdevice)
 
-    device = [ diskdevice, diskmodel, diskserial, disksize, diskfw, pcidevice, devicepath, devicewwn ]
+    device.append(diskdevice)
+    
+    if args.model:
+        diskmodel = get_disk_model(diskdata)
+        device.append(diskmodel)
+
+    if args.serial:
+        diskserial = get_disk_serial(diskdata)
+        device.append(diskserial)
+
+    if args.size:
+        disksize = get_disk_size(diskdata)
+        device.append(disksize)
+
+    if args.firmware:
+        diskfw = get_disk_firmware(diskdata)
+        device.append(diskfw)
+   
+    if args.controller:
+        pcidevice = get_pci_device_name(diskdevice)
+        device.append(pcidevice)
+
+    if args.pcipath:
+        devicepath = get_disk_path(diskdevice)
+        device.append(devicepath)
+
+    if args.wwn:
+        devicewwn = get_disk_wwn(diskdevice)
+        device.append(devicewwn)
+
+    #header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE BY PATH", "World Wide Name" ]
+    # device = [ diskdevice, diskmodel, diskserial, disksize, diskfw, pcidevice, devicepath, devicewwn ]
+
+    print header
+    print device
 
     return device
 
@@ -219,7 +272,6 @@ def display_table(table):
 #
         
 table = []
-header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE BY PATH", "World Wide Name" ]
 table.append(header)
 
 #
