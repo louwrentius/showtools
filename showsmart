@@ -18,12 +18,10 @@ diskbypathdata = ""
 # Parse command line options
 #
 
-parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
-parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
-args = parser.parse_args()
- 
-
-
+#parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
+#parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
+#args = parser.parse_args()
+#
 #
 # Get all disk devices
 #
