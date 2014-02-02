@@ -14,14 +14,43 @@ smarterror = False
 pcidevices = ""
 diskbypathdata = ""
 
+header = []
+
 #
 # Parse command line options
 #
 
-#parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
-#parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
-#args = parser.parse_args()
-#
+parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
+parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
+parser.add_argument("-H", "--hours", action="store_true", help="Power On Hours"  )
+parser.add_argument("-p", "--pending", action="store_true", help="Pending Sector Count", default="store_true"  )
+parser.add_argument("-r", "--reallocated", action="store_true", help="Reallocated Sector Count"  )
+parser.add_argument("-R", "--reallocatedevent", action="store_true", help="Reallocated Sector Event Count"  )
+parser.add_argument("-c", "--crc", action="store_true", help="CRC Error"  )
+args = parser.parse_args()
+
+def init_header():
+
+    header.append("Dev")
+
+    if args.temp:
+        header.append("Temp")
+
+    if args.hours:
+        header.append("Hours")
+
+    if args.pending:
+        header.append("Pending Sector")
+
+    if args.reallocated:
+        header.append("Reallocated Sector")
+
+    if args.reallocatedevent:
+        header.append("Reallocated Sector Event")
+
+    if args.crc:
+        header.append("CRC Error")
+
 #
 # Get all disk devices
 #
@@ -29,6 +58,7 @@ diskbypathdata = ""
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
+    diskdevices.sort()
     return diskdevices
 
 def get_disk_paths():
@@ -122,14 +152,33 @@ def process_device(diskdevice):
     if not diskdata:
         return None
 
-    disktemp = get_disk_temperature(diskdata)
-    diskpoweronhours = get_power_on_hours(diskdata)
-    diskreallocatedsector = get_reallocatedsector(diskdata)
-    diskreallocatedevent = get_reallocatedsectorevent(diskdata)
-    diskcurrentpending = get_pending_sector(diskdata)
-    diskudmacrcerror = get_udma_crc_error(diskdata)
-    
-    device = [ diskdevice, disktemp, diskpoweronhours, diskreallocatedsector, diskreallocatedevent, diskcurrentpending, diskudmacrcerror ]
+    device.append(diskdevice)
+
+    if args.temp:
+        disktemp = get_disk_temperature(diskdata)
+        device.append(disktemp)
+
+    if args.hours:
+        diskpoweronhours = get_power_on_hours(diskdata)
+        device.append(diskpoweronhours)
+
+    if args.pending:
+        diskcurrentpending = get_pending_sector(diskdata)
+        device.append(diskcurrentpending)
+
+    if args.reallocated:
+        diskreallocatedsector = get_reallocatedsector(diskdata)
+        device.append(diskreallocatedsector)
+
+    if args.reallocatedevent:
+        diskreallocatedevent = get_reallocatedsectorevent(diskdata)
+        device.append(diskreallocatedevent)
+
+    if args.crc:
+        diskudmacrcerror = get_udma_crc_error(diskdata)
+        device.append(diskudmacrcerror)
+
+    #print device
 
     return device
 
@@ -196,18 +245,13 @@ def display_table(table):
 #
         
 table = []
-header = [ "DEVICE", "TEMP", "POWERON", "REALLOC.", "REALLOC. EVNT","PENDING", "CRC ERR."  ]
 table.append(header)
 
-#
-# Main: get all devices and their data and display it in a table
-#
+init_header()
 
-get_disk_paths()
 
 for device in get_block_devices():
         devicedata = process_device(device)
         if devicedata:
             table.append(devicedata)
-
 display_table(table)

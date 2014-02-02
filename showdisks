@@ -14,7 +14,6 @@ pcidevices = ""
 diskbypathdata = ""
 diskbyiddata = ""
 
-#header = [ "DEVICE", "MODEL", "SERIAL", "SIZE", "FIRMWARE", "CONTROLLER", "DEVICE BY PATH", "World Wide Name" ]
 header = []
 
 #
@@ -22,11 +21,11 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed storage device information in ASCII table format')
-parser.add_argument("-m", "--model", action="store_true", help="Device model.", default="store_true"  )
-parser.add_argument("-S", "--serial", action="store_true", help="Device serial number." )
-parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes." )
+parser.add_argument("-m", "--model", action="store_true", help="Device model", default="store_true"  )
+parser.add_argument("-S", "--serial", action="store_true", help="Device serial number" )
+parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes" )
 parser.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
-parser.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected." )
+parser.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected" )
 parser.add_argument("-p", "--pcipath", action="store_true", help="/dev/disk/by-path/ ID of the device" )
 parser.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
 parser.add_argument("-o", "--scsi", action="store_true", help="/by-id/scsi" )
@@ -35,7 +34,7 @@ args = parser.parse_args()
 
 def init_header():
 
-    header.append("DEVICE")
+    header.append("DEV")
 
     if args.model:
         header.append("MODEL")
@@ -44,7 +43,7 @@ def init_header():
         header.append("SERIAL NUMBER")
 
     if args.size:
-        header.append("SIZE IN GB")
+        header.append("GB")
 
     if args.firmware:
         header.append("FIRMWARE")
@@ -62,12 +61,13 @@ def init_header():
         header.append("/DEV/DISK/BY-ID/SCSI*")
 
 #
-# Get all network interfaces
+# Get all devices
 #
 
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
+    diskdevices.sort()
     return diskdevices
 
 def get_pci_devices():
@@ -291,7 +291,7 @@ table = []
 table.append(header)
 
 #
-# Main: get all interfaces and their data and display it in a table
+# Main: get all devices and their data and display it in a table
 #
 
 get_pci_devices()
