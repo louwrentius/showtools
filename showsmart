@@ -21,13 +21,17 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
-parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
+parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius"  )
 parser.add_argument("-H", "--hours", action="store_true", help="Power On Hours"  )
-parser.add_argument("-p", "--pending", action="store_true", help="Pending Sector Count", default="store_true"  )
+parser.add_argument("-p", "--pending", action="store_true", help="Pending Sector Count"  )
 parser.add_argument("-r", "--reallocated", action="store_true", help="Reallocated Sector Count"  )
 parser.add_argument("-R", "--reallocatedevent", action="store_true", help="Reallocated Sector Event Count"  )
 parser.add_argument("-c", "--crc", action="store_true", help="CRC Error"  )
 args = parser.parse_args()
+
+if len(sys.argv)==1:
+    parser.print_help()
+    sys.exit(1)
 
 def init_header():
 

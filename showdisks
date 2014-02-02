@@ -21,16 +21,19 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed storage device information in ASCII table format')
-parser.add_argument("-m", "--model", action="store_true", help="Device model", default="store_true"  )
+parser.add_argument("-m", "--model", action="store_true", help="Device model"  )
 parser.add_argument("-S", "--serial", action="store_true", help="Device serial number" )
 parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes" )
 parser.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
 parser.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected" )
 parser.add_argument("-p", "--pcipath", action="store_true", help="/dev/disk/by-path/ ID of the device" )
 parser.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
-parser.add_argument("-o", "--scsi", action="store_true", help="/by-id/scsi" )
+parser.add_argument("-o", "--scsi", action="store_true", help="/dev/by-id/scsi" )
 args = parser.parse_args()
 
+if len(sys.argv)==1:
+    parser.print_help()    
+    sys.exit(1)
 
 def init_header():
 
