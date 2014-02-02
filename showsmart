@@ -7,11 +7,7 @@
 # Version: 1.0
 #
 
-import re
-import subprocess
-import sys
-import os
-import pprint
+import re, subprocess, sys, os, pprint, argparse
 
 smarterror = False
 
@@ -19,24 +15,27 @@ pcidevices = ""
 diskbypathdata = ""
 
 #
-# Get all network interfaces
+# Parse command line options
+#
+
+parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
+parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius", default="store_true"  )
+args = parser.parse_args()
+ 
+
+
+#
+# Get all disk devices
 #
 
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
-    #diskdevices = {"sdn"}
     return diskdevices
 
 def get_disk_paths():
     global diskbypathdata
     diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
-
-def is_real_device(device):
-    for item in diskbypathdata.splitlines():
-        if device in item:
-            return True
-    return False
 
 def get_parameter_from_smart(data,parameter,distance):
     regex = re.compile(parameter + '(.*)')   
@@ -101,21 +100,18 @@ def get_pending_sector(smartdata):
     return "?"
 
 def get_smart_data(device):
-    try:
-        child = subprocess.Popen(['smartctl', '-a', '-d', 'ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    child = subprocess.Popen(['smartctl', '-a', '-d', 'ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    rawdata = child.communicate()
+
+    if  child.returncode:
+        child = subprocess.Popen(['smartctl', '-a', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         rawdata = child.communicate()
-        if child.returncode:
-            child = subprocess.Popen(['smartctl', '-a', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            rawdata = child.communicate()
- 
-        smartdata = rawdata[0]
+        if child.returncode == 1:
+            return None
 
-        return smartdata
+    smartdata = rawdata[0]
 
-    except OSError:
-        global smarterror
-        smarterror = True
-        return ""
+    return smartdata
 
 def process_device(diskdevice):
 
@@ -124,11 +120,9 @@ def process_device(diskdevice):
     fullpath = "/dev/" + diskdevice
 
     diskdata = get_smart_data(fullpath)
-    #print "Diskdata: " + str(diskdata)
     
     if not diskdata:
         return None
-    
 
     disktemp = get_disk_temperature(diskdata)
     diskpoweronhours = get_power_on_hours(diskdata)
@@ -208,13 +202,12 @@ header = [ "DEVICE", "TEMP", "POWERON", "REALLOC.", "REALLOC. EVNT","PENDING", "
 table.append(header)
 
 #
-# Main: get all interfaces and their data and display it in a table
+# Main: get all devices and their data and display it in a table
 #
 
 get_disk_paths()
 
 for device in get_block_devices():
-    if is_real_device(device):
         devicedata = process_device(device)
         if devicedata:
             table.append(devicedata)
