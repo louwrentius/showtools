@@ -1,0 +1,655 @@
+#!/usr/bin/python
+#
+# Author: Louwrentius
+#
+# Requirement: hdparm
+# 
+#
+# Version: 1.0
+#
+
+import re, subprocess, sys, os, argparse
+
+hdparmerror = False
+pcidevices = ""
+diskbypathdata = ""
+diskbyiddata = ""
+smart = False
+ethtoolerror = False
+
+header = []
+
+#
+# Parse command line options
+#
+
+parser = argparse.ArgumentParser(description='Show detailed disk|net device information in ASCII table format')
+
+parser.add_argument('devicetype', choices=['disk', 'net'], help="Show disk information" )
+
+storage_generic = parser.add_argument_group(title="Storage (generic)", description="Generic options for storage devices")
+storage_generic.add_argument("-a", "--all-opts", action="store_true", help="Show all information"  )
+storage_generic.add_argument("-m", "--model", action="store_true", help="Device model"  )
+storage_generic.add_argument("-S", "--serial", action="store_true", help="Device serial number" )
+storage_generic.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes" )
+storage_generic.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
+storage_generic.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected" )
+storage_generic.add_argument("-p", "--pcipath", action="store_true", help="/dev/disk/by-path/ ID of the device" )
+storage_generic.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
+storage_generic.add_argument("-o", "--scsi", action="store_true", help="/dev/by-id/scsi" )
+
+storage_smart = parser.add_argument_group(title="Storage (SMART)", description="Options based on SMART values of storage devices")
+storage_smart.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius"  )
+storage_smart.add_argument("-H", "--hours", action="store_true", help="Power On Hours"  )
+storage_smart.add_argument("-P", "--pending", action="store_true", help="Pending Sector Count"  )
+storage_smart.add_argument("-r", "--reallocated", action="store_true", help="Reallocated Sector Count"  )
+storage_smart.add_argument("-R", "--reallocatedevent", action="store_true", help="Reallocated Sector Event Count"  )
+storage_smart.add_argument("-C", "--crc", action="store_true", help="CRC Error"  )
+
+network = parser.add_argument_group(title="Network", description="Available options for network devices")
+
+network.add_argument("-l", "--link", action="store_true", help="network card link status"  )
+network.add_argument("-4", "--ipv4", action="store_true", help="IPv4 address"  )
+network.add_argument("-6", "--ipv6", action="store_true", help="IPv6 address"  )
+network.add_argument("-M", "--mac", action="store_true", help="Hardware / MAC address"  )
+network.add_argument("-T", "--show-type", action="store_true", help="Network card type"  )
+network.add_argument("-d", "--driver", action="store_true", help="Driver module"  )
+network.add_argument("-F", "--firmware-version", action="store_true", help="Firmware Version"  )
+
+args = parser.parse_args()
+
+if len(sys.argv)==1:
+    parser.print_help()    
+    sys.exit(1)
+
+def init_header():
+
+    global smart
+
+    header.append("DEV")
+
+    if args.all_opts:
+        d = vars(args)
+        for var in d:
+            if not var == "devicetype": 
+                d[var] = True
+
+    if args.devicetype == "disk":
+        #
+        # Basic Storage
+        #
+
+        if args.model:
+            header.append("MODEL")
+
+        if args.serial:
+            header.append("SERIAL NUMBER")
+
+        if args.size:
+            header.append("GB")
+
+        if args.firmware:
+            header.append("FIRMWARE")
+
+        if args.controller:
+            header.append("CONTROLLER")
+
+        if args.pcipath:
+            header.append("/DEV/DISK/BY-PATH")
+
+        if args.wwn:
+            header.append("/DEV/DISK/BY-ID/WWN*")
+
+        if args.scsi:
+            header.append("/DEV/DISK/BY-ID/SCSI*")
+
+        #
+        # SMART Storage
+        #
+
+        if args.temp:
+            header.append("Temp")
+            smart = True
+
+        if args.hours:
+            header.append("Hours")
+            smart = True
+
+        if args.pending:
+            header.append("PS")
+            smart = True
+
+        if args.reallocated:
+            header.append("RS")
+            smart = True
+
+        if args.reallocatedevent:
+            header.append("RSE")
+            smart = True
+
+        if args.crc:
+            header.append("CRC")
+            smart = True
+
+    elif args.devicetype == "net":
+        #
+        # Network
+        #
+        if args.link:
+           header.append("Link")
+
+        if args.ipv4:
+           header.append("IPv4")
+
+        if args.ipv6:
+           header.append("IPv6")
+
+        if args.mac:
+           header.append("MAC")
+        
+        if args.show_type:
+           header.append("Type")
+
+        if args.driver:
+           header.append("Driver")
+
+        if args.firmware_version:
+           header.append("Firmware")
+    else:
+        print "If you see this the world will end."
+
+#
+# Get all network devices
+#
+
+def get_net_devices():
+    netdevices = open('/proc/net/dev', 'r').readlines()
+    return netdevices
+
+def get_interfaces():
+    interfaces = []
+    devices = get_net_devices()
+    for line in devices[2:]:
+        data = line.split(':')
+        interfaces.append(data[0].strip())
+        interfaces.sort()
+    return interfaces
+
+
+#
+# Get all disk devices
+#
+
+
+def get_block_devices():
+    devicepath = "/sys/block"
+    diskdevices = os.listdir(devicepath)
+    diskdevices.sort()
+    return diskdevices
+
+def get_pci_devices():
+    global pcidevices
+    pcidevices = subprocess.Popen(['lspci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+
+def get_all_disk_paths():
+    global diskbypathdata
+    diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+
+def get_all_disk_wwns():
+    global diskbyiddata
+    diskbyiddata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-id'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+    
+def get_disk_deviceid(diskdevice):
+    for item in diskbypathdata.splitlines():
+        if diskdevice in item:
+            parameter = 'pci-0000:'
+            regex = re.compile(parameter + '(.*)')   
+            match = regex.search(item)
+            if match:
+                model = match.group(1).split(".")[0]
+                return model
+
+def get_disk_path(diskdevice):
+    for item in diskbypathdata.splitlines():
+        if diskdevice in item:
+            parameter = 'pci-'
+            regex = re.compile(parameter + '(.*)')   
+            match = regex.search(item)
+            if match:
+                model = match.group(0).split(" ")[0]
+                return model
+
+def get_disk_wwn(diskdevice):
+    for item in diskbyiddata.splitlines():
+        if diskdevice in item:
+            if "wwn" in item:
+                parameter = 'wwn'
+                regex = re.compile(parameter + '(.*)')   
+                match = regex.search(item)
+                if match:
+                    model = match.group(0).split(" ")[0]
+                    return model
+    return "Not found"
+
+def get_disk_scsi(diskdevice):
+    for item in diskbyiddata.splitlines():
+        if diskdevice in item:
+            if "scsi" in item:
+                parameter = 'scsi'
+                regex = re.compile(parameter + '(.*)')   
+                match = regex.search(item)
+                if match:
+                    model = match.group(0).split(" ")[0]
+                    return model
+    return "Not found"
+            
+def get_pci_device_name(diskdevice):
+    deviceid = get_disk_deviceid(diskdevice)
+    regex = re.compile(deviceid + '(.*)')   
+    match = regex.search(pcidevices)
+    if match:
+        model = match.group(1).split(":")[1]
+        return model
+         
+def get_parameter_from_hdparm(data,parameter):
+    regex = re.compile(parameter + '(.*)')   
+    match = regex.search(data)
+    if match:
+        model = match.group(1).split(",")[0]
+        return model.strip()
+    return ''
+
+def get_disk_model(hdparmdata):
+    parameter = 'Model Number:' 
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+
+def get_disk_serial(hdparmdata):
+    parameter = 'Serial Number:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+
+def get_disk_size(hdparmdata):
+    parameter = 'device size with M = 1000\*1000:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    sizeinmb = match.split(" ")[0]
+    sizeingb = int(sizeinmb) / 1000
+    return str(sizeingb)
+
+def get_disk_firmware(hdparmdata):
+    parameter = 'Firmware Revision:'
+    match = get_parameter_from_hdparm(hdparmdata,parameter)
+    return match
+        
+def get_hdparm_data(device):
+    try:
+        rawdata = subprocess.Popen(['hdparm', '-I', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        hdparmdata = rawdata[0]
+        errordata = rawdata[1]
+        if errordata:
+            return None
+        return hdparmdata
+    except OSError:
+        global hdparmerror
+        hdparmerror = True
+        return ""
+
+#
+# Processing of SMART DATA
+#
+
+def get_parameter_from_smart(data,parameter,distance):
+    regex = re.compile(parameter + '(.*)')
+    match = regex.search(data)
+
+    if match:
+            tmp = match.group(1)
+            length = len(tmp.split("   "))
+            if length <= distance:
+                distance = length-1
+            model = match.group(1).split("   ")[distance].split(" ")[1]
+            return str(model)
+    return '?'
+
+
+def get_smart_data(device):
+    child = subprocess.Popen(['smartctl', '-a', '-d', 'ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    rawdata = child.communicate()
+
+    if  child.returncode:
+        child = subprocess.Popen(['smartctl', '-a', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        rawdata = child.communicate()
+        if child.returncode == 1:
+            return None
+
+    smartdata = rawdata[0]
+
+    return smartdata
+
+def get_power_on_hours(smartdata):
+    parameter = 'Power_On_Hours'
+    distance = 12
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_disk_temperature(smartdata):
+    parameter = 'Temperature_Celsius'
+    distance = 10
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_reallocatedsector(smartdata):
+    parameter = 'Reallocated_Sector_Ct'
+    distance = 9
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_reallocatedsectorevent(smartdata):
+    parameter = 'Reallocated_Event_Count'
+    distance = 9
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_udma_crc_error(smartdata):
+    parameter = 'UDMA_CRC_Error_Count'
+    distance = 10
+    match = get_parameter_from_smart(smartdata,parameter,distance)
+    return match
+
+def get_pending_sector(smartdata):
+    parameter1 = 'Total_Pending_Sectors'
+    parameter2 = 'Current_Pending_Sector'
+    distance1 = 10
+    distance2 = 10
+    match1 = get_parameter_from_smart(smartdata,parameter1,distance1)
+    match2 = get_parameter_from_smart(smartdata,parameter2,distance2)
+
+    if not match1 == "?":
+        return match1
+    if not match2 == "?":
+        return match2
+    return "?"
+
+#
+# Network functions
+#
+
+def get_interface_data(interface):
+    raw_data = subprocess.Popen(['ifconfig', interface], stdout=subprocess.PIPE).communicate()[0]
+    return raw_data
+
+def get_link_status(interface):
+    try:
+        raw_data = subprocess.Popen(['ethtool', interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
+    except OSError:
+        global ethtoolerror
+        ethtoolerror = True
+        return ""
+    match = re.search('Link\ detected:\ (\S+)', raw_data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_driver_data(interface):
+    try:
+        raw_data = subprocess.Popen(['ethtool', '-i',  interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
+    except OSError:
+        global ethtoolerror
+        ethtoolerror = True
+        return ""
+    return raw_data
+
+def get_driver(data):
+    match = re.search('driver:\ (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_firmware(data):
+    match = re.search('firmware-version:\ (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_ipv4_address(data):
+    match = re.search('inet addr:(\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_ipv6_address(data):
+    match = re.search('inet addr:(\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_mac_address(data):
+    match = re.search('HWaddr (\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+def get_interface_type(data):
+    match = re.search('encap:(\S+)', data)
+    if match:
+        return match.group(1)
+    return ''
+
+
+
+def process_device(dev):
+
+    device = []
+    device.append(dev)
+
+    if args.devicetype == "disk":
+
+        fullpath = "/dev/" + dev
+
+        diskdata = get_hdparm_data(fullpath)
+
+        if smart:
+            disksmart = get_smart_data(fullpath)
+        
+        if not diskdata:
+            return None
+
+        if args.model:
+            diskmodel = get_disk_model(diskdata)
+            device.append(diskmodel)
+
+        if args.serial:
+            diskserial = get_disk_serial(diskdata)
+            device.append(diskserial)
+
+        if args.size:
+            disksize = get_disk_size(diskdata)
+            device.append(disksize)
+
+        if args.firmware:
+            diskfw = get_disk_firmware(diskdata)
+            device.append(diskfw)
+       
+        if args.controller:
+            pcidevice = get_pci_device_name(diskdevice)
+            device.append(pcidevice)
+
+        if args.pcipath:
+            devicepath = get_disk_path(diskdevice)
+            device.append(devicepath)
+
+        if args.wwn:
+            devicewwn = get_disk_wwn(diskdevice)
+            device.append(devicewwn)
+
+        if args.scsi:
+            devicescsi = get_disk_scsi(diskdevice)
+            device.append(devicescsi)
+
+        #
+        # SMART DATA
+        #
+
+        if args.temp:
+            disktemp = get_disk_temperature(disksmart)
+            device.append(disktemp)
+
+        if args.hours:
+            diskpoweronhours = get_power_on_hours(disksmart)
+            device.append(diskpoweronhours)
+
+        if args.pending:
+            diskcurrentpending = get_pending_sector(disksmart)
+            device.append(diskcurrentpending)
+
+        if args.reallocated:
+            diskreallocatedsector = get_reallocatedsector(disksmart)
+            device.append(diskreallocatedsector)
+
+        if args.reallocatedevent:
+            diskreallocatedevent = get_reallocatedsectorevent(disksmart)
+            device.append(diskreallocatedevent)
+
+        if args.crc:
+            diskudmacrcerror = get_udma_crc_error(disksmart)
+            device.append(diskudmacrcerror)
+
+    #
+    # Network data
+    #
+
+    elif args.devicetype == "net":
+
+        raw_ifconfig = get_interface_data(dev)
+        raw_ethtool = get_driver_data(dev)
+
+        if args.link:
+            link = get_link_status(dev)
+            device.append(link)
+
+        if args.ipv4:
+            ipv4 = get_ipv4_address(raw_ifconfig)
+            device.append(ipv4)
+
+        if args.ipv6:
+            ipv6 = get_ipv6_address(raw_ifconfig)
+            device.append(ipv6)
+
+        if args.mac:
+            mac = get_mac_address(raw_ifconfig)
+            device.append(mac)
+
+        if args.show_type:
+            itype = get_interface_type(raw_ifconfig)
+            device.append(itype)
+
+        if args.driver:
+            driver = get_driver(raw_ethtool)
+            device.append(driver)
+
+        if args.firmware_version:
+            firmware = get_firmware(raw_ethtool)
+            device.append(firmware)
+
+    else:
+        print "This is a crash."
+        sys.exit(1)
+
+    return device
+
+#
+# Get collumn size for proper table formatting
+# Find the biggest string in a collumn
+#
+def get_collumn_size(table):
+
+    col_count = len(table[0])
+    col_widths = []
+    for i in xrange(col_count):
+        collumn = []
+        for row in table:
+            collumn.append(len(row[i]))
+        length = max(collumn)
+        col_widths.append(length)
+    return col_widths            
+
+def display_table(table):
+    col_widths = get_collumn_size(table)
+
+    # Dirty hack to get a closing pipe character at the end of the row
+    col_widths.append( 1 )
+
+    # Some values to calculate the actual table with, including spacing 
+    spacing = 1
+    delimiter = 3
+    table_width=(sum(col_widths) + len(col_widths)*spacing*delimiter)-delimiter
+
+    format = ""
+    for col in col_widths:
+        form = "| %-" + str(col) + "s "
+        format += form
+
+    #
+    # Print header
+    # 
+    header = table[0]
+    header.append("")
+    print '%s' % '-'*table_width
+    print format % tuple(header)
+    print '%s' % '-'*table_width
+
+    #
+    # Drop header from table data  
+    # 
+    table.pop(0)
+
+    #
+    # Print actual table contents
+    #
+    for row in table:
+        row.append("")
+        print format % tuple(row)
+    print '%s' % '-'*table_width
+
+    if hdparmerror:
+        print "ERROR: hdparm not installed or not working!"
+
+#
+# Define table and add header as first row
+# The header also defines the table / collumn width
+#
+        
+table = []
+table.append(header)
+
+#
+# Main: get all devices and their data and display it in a table
+#
+
+def get_devices():
+
+    if args.devicetype == "disk":
+        get_pci_devices()
+        get_all_disk_paths()
+        get_all_disk_wwns()
+        devices = get_block_devices()
+
+    elif args.devicetype == "net":
+        devices = get_interfaces()
+    else:
+        print "Something went totally wrong"
+        print args.all_opts
+        sys.exit(1)
+
+    for device in devices:
+        yield device
+    return
+
+init_header()
+
+for device in get_devices():
+    devicedata = process_device(device)
+    if devicedata:
+        table.append(devicedata)
+
+display_table(table)
