@@ -21,6 +21,7 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed storage device information in ASCII table format')
+parser.add_argument("-a", "--all-opts", action="store_true", help="Show all information"  )
 parser.add_argument("-m", "--model", action="store_true", help="Device model"  )
 parser.add_argument("-S", "--serial", action="store_true", help="Device serial number" )
 parser.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes" )
@@ -38,6 +39,11 @@ if len(sys.argv)==1:
 def init_header():
 
     header.append("DEV")
+
+    if args.all_opts:
+        d = vars(args)
+        for var in d:
+            d[var] = True
 
     if args.model:
         header.append("MODEL")

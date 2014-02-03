@@ -21,6 +21,7 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed SMART device information in ASCII table format')
+parser.add_argument("-a", "--all-opts", action="store_true", help="Show all information"  )
 parser.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius"  )
 parser.add_argument("-H", "--hours", action="store_true", help="Power On Hours"  )
 parser.add_argument("-p", "--pending", action="store_true", help="Pending Sector Count"  )
@@ -36,6 +37,11 @@ if len(sys.argv)==1:
 def init_header():
 
     header.append("Dev")
+
+    if args.all_opts:
+        d = vars(args)
+        for var in d:
+            d[var] = True
 
     if args.temp:
         header.append("Temp")
