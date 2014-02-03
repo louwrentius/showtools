@@ -471,19 +471,19 @@ def process_device(dev):
             device.append(diskfw)
        
         if args.controller:
-            pcidevice = get_pci_device_name(diskdevice)
+            pcidevice = get_pci_device_name(dev)
             device.append(pcidevice)
 
         if args.pcipath:
-            devicepath = get_disk_path(diskdevice)
+            devicepath = get_disk_path(dev)
             device.append(devicepath)
 
         if args.wwn:
-            devicewwn = get_disk_wwn(diskdevice)
+            devicewwn = get_disk_wwn(dev)
             device.append(devicewwn)
 
         if args.scsi:
-            devicescsi = get_disk_scsi(diskdevice)
+            devicescsi = get_disk_scsi(dev)
             device.append(devicescsi)
 
         #
