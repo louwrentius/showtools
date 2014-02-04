@@ -1,60 +1,23 @@
 # showtools
 
-Assorted Linux oriented Python scripts that show system information, such as:
+This tool displays information about disks or network cards in a nice
+ASCII table format on the command line. 
 
 - All network interfaces and some of their properties
 - All storage devices (hdd/sdd) and some of their properties (SMART)
 
-All scripts use the same underlying mechanism to display data in a table format that is dynamically generated based on the size of the content.
+Examples:
 
-# Showifs
+Show information about network interfaces:
 
-This script shows all interfaces and their status. A screenshot shows you what is shown:
+![network][0]
 
-![showifs][1]
+[0]: /static/images/shownet.png
 
-As you can see, it shows you the:
+Show SMART information about disks:
 
-* Type of interface
-* Link status 
-* Associeated IP-address (ipv4 only)
-* Hardware address
-* Kernel module used
-* Firmware version 
+[1]: /static/images/showdisk01.png
 
-[1]: http://louwrentius.com/static/images/showinterfaces01.png
+Show /dev/disk/by-\* information:
 
-# Showdisks
-
-This script shows information about all storage devices in your system.
-
-The script shows you the:
-
-* Model
-* Serial number
-* Size (in MB)
-* Firmware version
-* Storage controller to which the device is connected
-* Device path (which may help you identify to which port the storage device is connected)
-
-![showdisks][2]
-
-[2]: http://louwrentius.com/static/images/showdisks01.png
-
-# Showsmart
-
-This script shows all storage devices and some key SMART values that may tell something about the health of the device.
-
-The script shows you:
-
-* The temperature of the device
-* How many poweron hours the drive has seen
-* How many reallocated sectors it has
-* How many pending sectors there are (bad sectors)
-* How many CRC errors the device has seen (cable issues)
-
-![showsmart][3]
-
-There may be more indicators included which might be relevant.
-
-[3]: http://louwrentius.com/static/images/showsmart.png
+[2]: /static/images/showdisk02.png
