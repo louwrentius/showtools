@@ -16,7 +16,6 @@ diskbypathdata = ""
 diskbyiddata = ""
 smart = False
 ethtoolerror = False
-
 header = []
 
 #
@@ -24,7 +23,6 @@ header = []
 #
 
 parser = argparse.ArgumentParser(description='Show detailed disk|net device information in ASCII table format')
-
 parser.add_argument('devicetype', choices=['disk', 'net'], help="Show disk information" )
 
 storage_generic = parser.add_argument_group(title="Storage (generic)", description="Generic options for storage devices")
@@ -56,7 +54,12 @@ network.add_argument("-T", "--show-type", action="store_true", help="Network car
 network.add_argument("-d", "--driver", action="store_true", help="Driver module"  )
 network.add_argument("-F", "--firmware-version", action="store_true", help="Firmware Version"  )
 
-args = parser.parse_args()
+try:
+    args = parser.parse_args()
+except:
+    print "----------------------------------------"
+    parser.print_help()
+    sys.exit(1)
 
 if len(sys.argv)==1:
     parser.print_help()    
@@ -415,12 +418,15 @@ def get_ipv4_address(data):
     match = re.search('inet addr:(\S+)', data)
     if match:
         return match.group(1)
+        
     return ''
 
 def get_ipv6_address(data):
-    match = re.search('inet addr:(\S+)', data)
+    match = re.search('inet6 addr: (\S+)', data)
     if match:
         return match.group(1)
+    else:
+        print "noipv6"
     return ''
 
 def get_mac_address(data):
