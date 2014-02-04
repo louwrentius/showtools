@@ -12,12 +12,16 @@ Show information about network interfaces:
 
 ![network][0]
 
-[0]: /static/images/shownet.png
+[0]: http://louwrentius.com/static/images/shownet.png
 
 Show SMART information about disks:
 
-[1]: /static/images/showdisk01.png
+![showdisk01][1]
+
+[1]: http://louwrentius.com/static/images/showdisk01.png
 
 Show /dev/disk/by-\* information:
 
-[2]: /static/images/showdisk02.png
+![showdisk02][2]
+
+[2]: http://louwrentius.com/static/images/showdisk02.png
