@@ -16,6 +16,10 @@ Show information about network interfaces:
 
 Show SMART information about disks:
 
+PS = Pending Sector
+RS = Reallocated Sector
+RSE = Reallocated Sector Event
+
 ![showdisk01][1]
 
 [1]: http://louwrentius.com/static/images/showdisk01.png
