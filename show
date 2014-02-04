@@ -10,12 +10,12 @@
 
 import re, subprocess, sys, os, argparse
 
-hdparmerror = False
-pcidevices = ""
-diskbypathdata = ""
-diskbyiddata = ""
+hdparm_error = False
+pci_devices = ""
+disk_by_path_data = ""
+disk_by_id_data = ""
 smart = False
-ethtoolerror = False
+ethtools_error = False
 header = []
 
 #
@@ -26,38 +26,37 @@ parser = argparse.ArgumentParser(description='Show detailed disk|net device info
 parser.add_argument('devicetype', choices=['disk', 'net'], help="Show disk information" )
 
 storage_generic = parser.add_argument_group(title="Storage (generic)", description="Generic options for storage devices")
-storage_generic.add_argument("-a", "--all-opts", action="store_true", help="Show all information"  )
-storage_generic.add_argument("-m", "--model", action="store_true", help="Device model"  )
-storage_generic.add_argument("-S", "--serial", action="store_true", help="Device serial number" )
-storage_generic.add_argument("-s", "--size", action="store_true", help="Device size in Gigabytes" )
-storage_generic.add_argument("-f", "--firmware", action="store_true", help="Device firmware version" )
-storage_generic.add_argument("-c", "--controller", action="store_true", help="Controller to which device is connected" )
+storage_generic.add_argument("-a", "--all-opts", action="store_true", help="show all information"  )
+storage_generic.add_argument("-m", "--model", action="store_true", help="device model"  )
+storage_generic.add_argument("-S", "--serial", action="store_true", help="device serial number" )
+storage_generic.add_argument("-s", "--size", action="store_true", help="device size in Gigabytes" )
+storage_generic.add_argument("-f", "--firmware", action="store_true", help="device firmware version" )
+storage_generic.add_argument("-c", "--controller", action="store_true", help="controller to which device is connected" )
 storage_generic.add_argument("-p", "--pcipath", action="store_true", help="/dev/disk/by-path/ ID of the device" )
-storage_generic.add_argument("-w", "--wwn", action="store_true", help="Device World Wide Name" )
+storage_generic.add_argument("-w", "--wwn", action="store_true", help="device World Wide Name" )
 storage_generic.add_argument("-o", "--scsi", action="store_true", help="/dev/by-id/scsi" )
 
 storage_smart = parser.add_argument_group(title="Storage (SMART)", description="Options based on SMART values of storage devices")
-storage_smart.add_argument("-t", "--temp", action="store_true", help="Temperature in Celcius"  )
-storage_smart.add_argument("-H", "--hours", action="store_true", help="Power On Hours"  )
-storage_smart.add_argument("-P", "--pending", action="store_true", help="Pending Sector Count"  )
-storage_smart.add_argument("-r", "--reallocated", action="store_true", help="Reallocated Sector Count"  )
-storage_smart.add_argument("-R", "--reallocatedevent", action="store_true", help="Reallocated Sector Event Count"  )
-storage_smart.add_argument("-C", "--crc", action="store_true", help="CRC Error"  )
+storage_smart.add_argument("-t", "--temp", action="store_true", help="temperature in Celcius"  )
+storage_smart.add_argument("-H", "--hours", action="store_true", help="power on hours"  )
+storage_smart.add_argument("-P", "--pending", action="store_true", help="pending sector count"  )
+storage_smart.add_argument("-r", "--reallocated", action="store_true", help="reallocated sector count"  )
+storage_smart.add_argument("-R", "--reallocatedevent", action="store_true", help="reallocated sector event count"  )
+storage_smart.add_argument("-C", "--crc", action="store_true", help="CRC error"  )
 
 network = parser.add_argument_group(title="Network", description="Available options for network devices")
 
 network.add_argument("-l", "--link", action="store_true", help="network card link status"  )
 network.add_argument("-4", "--ipv4", action="store_true", help="IPv4 address"  )
 network.add_argument("-6", "--ipv6", action="store_true", help="IPv6 address"  )
-network.add_argument("-M", "--mac", action="store_true", help="Hardware / MAC address"  )
-network.add_argument("-T", "--show-type", action="store_true", help="Network card type"  )
-network.add_argument("-d", "--driver", action="store_true", help="Driver module"  )
-network.add_argument("-F", "--firmware-version", action="store_true", help="Firmware Version"  )
+network.add_argument("-M", "--mac", action="store_true", help="hardware / MAC address"  )
+network.add_argument("-T", "--show-type", action="store_true", help="network card type"  )
+network.add_argument("-d", "--driver", action="store_true", help="driver module"  )
+network.add_argument("-F", "--firmware-version", action="store_true", help="firmware version"  )
 
 try:
     args = parser.parse_args()
 except:
-    print "----------------------------------------"
     parser.print_help()
     sys.exit(1)
 
@@ -84,25 +83,18 @@ def init_header():
 
         if args.model:
             header.append("MODEL")
-
         if args.serial:
             header.append("SERIAL NUMBER")
-
         if args.size:
             header.append("GB")
-
         if args.firmware:
             header.append("FIRMWARE")
-
         if args.controller:
             header.append("CONTROLLER")
-
         if args.pcipath:
             header.append("/DEV/DISK/BY-PATH")
-
         if args.wwn:
             header.append("/DEV/DISK/BY-ID/WWN*")
-
         if args.scsi:
             header.append("/DEV/DISK/BY-ID/SCSI*")
 
@@ -191,19 +183,19 @@ def get_block_devices():
     return diskdevices
 
 def get_pci_devices():
-    global pcidevices
-    pcidevices = subprocess.Popen(['lspci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+    global pci_devices
+    pci_devices = subprocess.Popen(['lspci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
 
 def get_all_disk_paths():
-    global diskbypathdata
-    diskbypathdata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+    global disk_by_path_data
+    disk_by_path_data = subprocess.Popen(['ls', '-alh', '/dev/disk/by-path'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
 
 def get_all_disk_wwns():
-    global diskbyiddata
-    diskbyiddata = subprocess.Popen(['ls', '-alh', '/dev/disk/by-id'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+    global disk_by_id_data
+    disk_by_id_data = subprocess.Popen(['ls', '-alh', '/dev/disk/by-id'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
     
 def get_disk_deviceid(diskdevice):
-    for item in diskbypathdata.splitlines():
+    for item in disk_by_path_data.splitlines():
         if diskdevice in item:
             parameter = 'pci-0000:'
             regex = re.compile(parameter + '(.*)')   
@@ -213,7 +205,7 @@ def get_disk_deviceid(diskdevice):
                 return model
 
 def get_disk_path(diskdevice):
-    for item in diskbypathdata.splitlines():
+    for item in disk_by_path_data.splitlines():
         if diskdevice in item:
             parameter = 'pci-'
             regex = re.compile(parameter + '(.*)')   
@@ -223,7 +215,7 @@ def get_disk_path(diskdevice):
                 return model
 
 def get_disk_wwn(diskdevice):
-    for item in diskbyiddata.splitlines():
+    for item in disk_by_id_data.splitlines():
         if diskdevice in item:
             if "wwn" in item:
                 parameter = 'wwn'
@@ -235,7 +227,7 @@ def get_disk_wwn(diskdevice):
     return "Not found"
 
 def get_disk_scsi(diskdevice):
-    for item in diskbyiddata.splitlines():
+    for item in disk_by_id_data.splitlines():
         if diskdevice in item:
             if "scsi" in item:
                 parameter = 'scsi'
@@ -249,7 +241,7 @@ def get_disk_scsi(diskdevice):
 def get_pci_device_name(diskdevice):
     deviceid = get_disk_deviceid(diskdevice)
     regex = re.compile(deviceid + '(.*)')   
-    match = regex.search(pcidevices)
+    match = regex.search(pci_devices)
     if match:
         model = match.group(1).split(":")[1]
         return model
@@ -293,8 +285,8 @@ def get_hdparm_data(device):
             return None
         return hdparmdata
     except OSError:
-        global hdparmerror
-        hdparmerror = True
+        global hdparm_error
+        hdparm_error = True
         return ""
 
 #
@@ -385,8 +377,8 @@ def get_link_status(interface):
     try:
         raw_data = subprocess.Popen(['ethtool', interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
     except OSError:
-        global ethtoolerror
-        ethtoolerror = True
+        global ethtools_error
+        ethtools_error = True
         return ""
     match = re.search('Link\ detected:\ (\S+)', raw_data)
     if match:
@@ -397,8 +389,8 @@ def get_driver_data(interface):
     try:
         raw_data = subprocess.Popen(['ethtool', '-i',  interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT ).communicate()[0]
     except OSError:
-        global ethtoolerror
-        ethtoolerror = True
+        global ethtools_error
+        ethtools_error = True
         return ""
     return raw_data
 
@@ -425,8 +417,6 @@ def get_ipv6_address(data):
     match = re.search('inet6 addr: (\S+)', data)
     if match:
         return match.group(1)
-    else:
-        print "noipv6"
     return ''
 
 def get_mac_address(data):
@@ -617,7 +607,7 @@ def display_table(table):
         print format % tuple(row)
     print '%s' % '-'*table_width
 
-    if hdparmerror:
+    if hdparm_error:
         print "ERROR: hdparm not installed or not working!"
 
 #
