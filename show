@@ -5,7 +5,7 @@
 # Requirement: hdparm
 # 
 #
-# Version: 1.01
+# Version: 1.02
 #
 
 import re, subprocess, sys, os, argparse
@@ -331,7 +331,7 @@ def get_parameter_from_smart(data,parameter,distance):
                 distance = length-1
             model = match.group(1).split("   ")[distance].split(" ")[1]
             return str(model)
-    return ""
+    return None
 
 
 def get_smart_data(device):
@@ -351,31 +351,46 @@ def get_power_on_hours(smartdata):
     parameter = 'Power_On_Hours'
     distance = 12
     match = get_parameter_from_smart(smartdata,parameter,distance)
-    return match
+    if match:
+        return match
+    else:
+        return ""
 
 def get_disk_temperature(smartdata):
     parameter = 'Temperature_Celsius'
     distance = 10
     match = get_parameter_from_smart(smartdata,parameter,distance)
-    return match
+    if match:
+        return match
+    else:
+        return ""
 
 def get_reallocatedsector(smartdata):
     parameter = 'Reallocated_Sector_Ct'
     distance = 9
     match = get_parameter_from_smart(smartdata,parameter,distance)
-    return match
+    if match:
+        return match
+    else:
+        return ""
 
 def get_reallocatedsectorevent(smartdata):
     parameter = 'Reallocated_Event_Count'
     distance = 9
     match = get_parameter_from_smart(smartdata,parameter,distance)
-    return match
+    if match:
+        return match
+    else:
+        return ""
 
 def get_udma_crc_error(smartdata):
     parameter = 'UDMA_CRC_Error_Count'
     distance = 10
     match = get_parameter_from_smart(smartdata,parameter,distance)
-    return match
+    if match:
+        return match
+    else:
+        return ""
 
 def get_pending_sector(smartdata):
     parameter1 = 'Total_Pending_Sectors'
@@ -385,11 +400,12 @@ def get_pending_sector(smartdata):
     match1 = get_parameter_from_smart(smartdata,parameter1,distance1)
     match2 = get_parameter_from_smart(smartdata,parameter2,distance2)
 
-    if not match1 == "?":
+    if match1:
         return match1
-    if not match2 == "?":
+    if match2:
         return match2
-    return "?"
+
+    return ""
 
 #
 # Network functions
@@ -676,5 +692,4 @@ for device in get_devices():
         devicedata = process_device(device)
         if devicedata:
             table.append(devicedata)
-#print table
 display_table(table)
