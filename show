@@ -5,7 +5,7 @@
 # Requirement: hdparm
 # 
 #
-# Version: 1.0
+# Version: 1.01
 #
 
 import re, subprocess, sys, os, argparse
@@ -203,6 +203,7 @@ def get_disk_deviceid(diskdevice):
             if match:
                 model = match.group(1).split(".")[0]
                 return model
+    return ""
 
 def get_disk_path(diskdevice):
     for item in disk_by_path_data.splitlines():
@@ -213,6 +214,7 @@ def get_disk_path(diskdevice):
             if match:
                 model = match.group(0).split(" ")[0]
                 return model
+    return ""
 
 def get_disk_wwn(diskdevice):
     for item in disk_by_id_data.splitlines():
@@ -224,7 +226,7 @@ def get_disk_wwn(diskdevice):
                 if match:
                     model = match.group(0).split(" ")[0]
                     return model
-    return "Not found"
+    return ""
 
 def get_disk_scsi(diskdevice):
     for item in disk_by_id_data.splitlines():
@@ -236,7 +238,7 @@ def get_disk_scsi(diskdevice):
                 if match:
                     model = match.group(0).split(" ")[0]
                     return model
-    return "Not found"
+    return ""
             
 def get_pci_device_name(diskdevice):
     deviceid = get_disk_deviceid(diskdevice)
@@ -245,48 +247,73 @@ def get_pci_device_name(diskdevice):
     if match:
         model = match.group(1).split(":")[1]
         return model
+    return ""
          
-def get_parameter_from_hdparm(data,parameter):
+def get_parameter_from_data(data,parameter):
     regex = re.compile(parameter + '(.*)')   
     match = regex.search(data)
     if match:
         model = match.group(1).split(",")[0]
         return model.strip()
-    return ''
+    return None
 
 def get_disk_model(hdparmdata):
     parameter = 'Model Number:' 
-    match = get_parameter_from_hdparm(hdparmdata,parameter)
-    return match
+    match = get_parameter_from_data(hdparmdata,parameter)
+    if match:
+        return match
+    else:
+        return ""
 
 def get_disk_serial(hdparmdata):
     parameter = 'Serial Number:'
-    match = get_parameter_from_hdparm(hdparmdata,parameter)
-    return match
+    match = get_parameter_from_data(hdparmdata,parameter)
+    if match:
+        return match
+    else:
+        return ""
 
-def get_disk_size(hdparmdata):
-    parameter = 'device size with M = 1000\*1000:'
-    match = get_parameter_from_hdparm(hdparmdata,parameter)
-    sizeinmb = match.split(" ")[0]
-    sizeingb = int(sizeinmb) / 1000
-    return str(sizeingb)
+def get_fdisk_size(device):
+    command = "fdisk -l /dev/" + device
+    p = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    rawdata = p.communicate()
+    return rawdata[0]
+
+def get_disk_size(dev):
+    data = get_fdisk_size(dev)
+    if data:
+        parameter = "," 
+        raw = get_parameter_from_data(data,parameter)
+        bytes = raw.split(" ")[0]
+        gb = int(bytes) / 1000000000 
+        return str(gb)
+    else:
+        return None
 
 def get_disk_firmware(hdparmdata):
     parameter = 'Firmware Revision:'
-    match = get_parameter_from_hdparm(hdparmdata,parameter)
-    return match
+    match = get_parameter_from_data(hdparmdata,parameter)
+    if match:
+        return match
+    else:
+        return ""
         
 def get_hdparm_data(device):
+    command = "hdparm -I " + device
+    p = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    rawdata = p.communicate()
+    returncode = p.returncode
+    if returncode or rawdata[1]:
+        raise Exception(rawdata)
+    return rawdata
+
+
+def get_disk_data(device):
+
     try:
-        rawdata = subprocess.Popen(['hdparm', '-I', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        hdparmdata = rawdata[0]
-        errordata = rawdata[1]
-        if errordata:
-            return None
-        return hdparmdata
-    except OSError:
-        global hdparm_error
-        hdparm_error = True
+        data = get_hdparm_data(device)
+        return data[0]
+    except Exception as e:
         return ""
 
 #
@@ -304,21 +331,20 @@ def get_parameter_from_smart(data,parameter,distance):
                 distance = length-1
             model = match.group(1).split("   ")[distance].split(" ")[1]
             return str(model)
-    return '?'
+    return ""
 
 
 def get_smart_data(device):
     child = subprocess.Popen(['smartctl', '-a', '-d', 'ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     rawdata = child.communicate()
 
-    if  child.returncode:
-        child = subprocess.Popen(['smartctl', '-a', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        rawdata = child.communicate()
-        if child.returncode == 1:
-            return None
+    if child.returncode:
+       child = subprocess.Popen(['smartctl', '-a', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+       rawdata = child.communicate()
+       if child.returncode == 1:
+          return ""
 
     smartdata = rawdata[0]
-
     return smartdata
 
 def get_power_on_hours(smartdata):
@@ -383,7 +409,7 @@ def get_link_status(interface):
     match = re.search('Link\ detected:\ (\S+)', raw_data)
     if match:
         return match.group(1)
-    return ''
+    return '?'
 
 def get_driver_data(interface):
     try:
@@ -391,7 +417,7 @@ def get_driver_data(interface):
     except OSError:
         global ethtools_error
         ethtools_error = True
-        return ""
+        return "?"
     return raw_data
 
 def get_driver(data):
@@ -410,7 +436,6 @@ def get_ipv4_address(data):
     match = re.search('inet addr:(\S+)', data)
     if match:
         return match.group(1)
-        
     return ''
 
 def get_ipv6_address(data):
@@ -434,22 +459,25 @@ def get_interface_type(data):
 
 
 def process_device(dev):
+    """
+    This function gathers all data from a device and puts this data
+    into a list. This list will become a single row in the output table.
+    """
 
     device = []
-    device.append(dev)
 
     if args.devicetype == "disk":
 
         fullpath = "/dev/" + dev
 
-        diskdata = get_hdparm_data(fullpath)
+        diskdata = get_disk_data(fullpath)
+        disksize = get_disk_size(dev)
+        if not disksize:
+            return None
 
         if smart:
             disksmart = get_smart_data(fullpath)
         
-        if not diskdata:
-            return None
-
         if args.model:
             diskmodel = get_disk_model(diskdata)
             device.append(diskmodel)
@@ -459,7 +487,6 @@ def process_device(dev):
             device.append(diskserial)
 
         if args.size:
-            disksize = get_disk_size(diskdata)
             device.append(disksize)
 
         if args.firmware:
@@ -548,9 +575,10 @@ def process_device(dev):
             device.append(firmware)
 
     else:
-        print "This is a crash."
+        print "This is a bug, please inform the developer."
         sys.exit(1)
 
+    device.insert(0,dev)
     return device
 
 #
@@ -644,8 +672,9 @@ def get_devices():
 init_header()
 
 for device in get_devices():
-    devicedata = process_device(device)
-    if devicedata:
-        table.append(devicedata)
-
+    if not device.startswith("md"):
+        devicedata = process_device(device)
+        if devicedata:
+            table.append(devicedata)
+#print table
 display_table(table)
