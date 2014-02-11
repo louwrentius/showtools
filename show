@@ -8,7 +8,11 @@
 # Version: 1.02
 #
 
-import re, subprocess, sys, os, argparse
+import re
+import subprocess
+import sys
+import os
+import argparse
 
 hdparm_error = False
 pci_devices = ""
@@ -329,12 +333,30 @@ def get_parameter_from_smart(data,parameter,distance):
             length = len(tmp.split("   "))
             if length <= distance:
                 distance = length-1
-            model = match.group(1).split("   ")[distance].split(" ")[1]
+
+            #
+            # SMART data is often a bit of a mess, so this
+            # hack is used to cope with this.
+            #
+
+            try:
+                model = match.group(1).split("   ")[distance].split(" ")[1]
+            except:
+                model = match.group(1).split("   ")[distance+1].split(" ")[1]
             return str(model)
     return None
 
-
 def get_smart_data(device):
+
+    #
+    # For debugging purposes  
+    # 
+    file = os.environ['smartdata']
+    if os.path.isfile(file):
+        f = open(file, 'r')
+        data = f.read()
+        return data
+
     child = subprocess.Popen(['smartctl', '-a', '-d', 'ata', device], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     rawdata = child.communicate()
 
