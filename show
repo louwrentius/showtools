@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Author: Louwrentius
 #
@@ -267,91 +267,56 @@ def get_all_disk_wwns():
     return disk_by_id_data
 
 
-def get_disk_deviceid(diskdevice, diskbypathdata):
-    for item in diskbypathdata.splitlines():
-        if diskdevice in item:
-            parameter = 'pci-0000:'
-            regex = re.compile(parameter + '(.*)')
+def generic_match_finder(device, data, pattern, matchgroup, split, itemnumber):
+    for item in data.splitlines():
+        if device in item:
+            regex = re.compile(pattern + '(.*)')
             match = regex.search(item)
             if match:
-                model = match.group(1).split(".")[0]
+                model = match.group(matchgroup).split(split)[itemnumber]
                 return model
     return ""
+
+
+def get_disk_deviceid(diskdevice, diskbypathdata):
+    deviceid = generic_match_finder(diskdevice, diskbypathdata, 'pci-0000:', 1,
+                                    ".", 0)
+    return deviceid
 
 
 def get_disk_path(diskdevice, diskbypathdata):
-    for item in diskbypathdata.splitlines():
-        if diskdevice in item:
-            parameter = 'pci-'
-            regex = re.compile(parameter + '(.*)')
-            match = regex.search(item)
-            if match:
-                model = match.group(0).split(" ")[0]
-                return model
-    return ""
+    diskpath = generic_match_finder(diskdevice, diskbypathdata, 'pci-', 0, " ",
+                                    0)
+    return diskpath
 
 
 def get_disk_wwn(diskdevice, diskbyiddata):
-    for item in diskbyiddata.splitlines():
-        if diskdevice in item:
-            if "wwn" in item:
-                parameter = 'wwn'
-                regex = re.compile(parameter + '(.*)')
-                match = regex.search(item)
-                if match:
-                    model = match.group(0).split(" ")[0]
-                    return model
-    return ""
+    diskwwn = generic_match_finder(diskdevice, diskbyiddata, 'wwn', 0, " ", 0)
+    return diskwwn
 
 
 def get_disk_scsi(diskdevice, diskbyiddata):
-    for item in diskbyiddata.splitlines():
-        if diskdevice in item:
-            if "scsi" in item:
-                parameter = 'scsi'
-                regex = re.compile(parameter + '(.*)')
-                match = regex.search(item)
-                if match:
-                    model = match.group(0).split(" ")[0]
-                    return model
-    return ""
+    diskscsi = generic_match_finder(diskdevice, diskbyiddata, 'scsi', 0, " ",
+                                    0)
+    return diskscsi
 
 
 def get_pci_device_name(diskdevice, pci_devices, diskbypathdata):
     deviceid = get_disk_deviceid(diskdevice, diskbypathdata)
-    regex = re.compile(deviceid + '(.*)')
-    match = regex.search(pci_devices)
-    if match:
-        model = match.group(1).split(":")[1]
-        return model
-    return ""
-
-
-def get_parameter_from_data(data, parameter):
-    regex = re.compile(parameter + '(.*)')
-    match = regex.search(data)
-    if match:
-        model = match.group(1).split(", ")[0]
-        return model.strip()
-    return ""
+    devicename = generic_match_finder(deviceid, pci_devices, deviceid, 1, ":",
+                                      1)
+    return devicename
 
 
 def get_disk_model(hdparmdata):
-    parameter = 'Model Number:'
-    match = get_parameter_from_data(hdparmdata, parameter)
-    if match:
-        return match
-    else:
-        return ""
+    model = generic_match_finder("", hdparmdata, 'Model Number:', 1, ", ",
+                                 0)
+    return model.strip()
 
 
 def get_disk_serial(hdparmdata):
-    parameter = 'Serial Number:'
-    match = get_parameter_from_data(hdparmdata, parameter)
-    if match:
-        return match
-    else:
-        return ""
+    serial = generic_match_finder("", hdparmdata, 'Serial Number:', 1, ", ", 0)
+    return serial.strip()
 
 
 def get_fdisk_size(device):
@@ -365,8 +330,7 @@ def get_fdisk_size(device):
 def get_disk_size(dev):
     data = get_fdisk_size(dev)
     if data:
-        parameter = ", "
-        raw = get_parameter_from_data(data, parameter)
+        raw = generic_match_finder("", data, ", ", 1, ", ", 0)
         bytes = raw.split(" ")[0]
         gb = int(bytes) / 1000000000
         return str(gb)
@@ -375,12 +339,9 @@ def get_disk_size(dev):
 
 
 def get_disk_firmware(hdparmdata):
-    parameter = 'Firmware Revision:'
-    match = get_parameter_from_data(hdparmdata, parameter)
-    if match:
-        return match
-    else:
-        return ""
+    match = generic_match_finder("", hdparmdata, 'Firmware Revision:', 1, ":",
+                                 0)
+    return match.strip()
 
 
 def get_hdparm_data(device):
@@ -446,8 +407,8 @@ def get_smart_data(device):
 
     try:
         child = subprocess.Popen(['smartctl',  '-a',  '-d',  'ata',  device],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
     except:
         print "Executing smartctl gave an error, is smartmontools installed?"
         sys.exit(1)
@@ -470,7 +431,7 @@ def get_smart_data(device):
 #
 
 
-def generic_data_parser(regex, data):
+def search_data_for_match(regex, data):
     match = re.search(regex,  data)
     if match:
         return match.group(1)
@@ -496,7 +457,7 @@ def get_driver_data(interface, parameter):
     except OSError:
         print "It seems that ethtool is not installed..."
         sys.exit(1)
-        
+
     return raw_data
 
 
@@ -639,33 +600,33 @@ def process_device(dev, args):
         #print raw_ethtool_extended
 
         if args.link:
-            link = generic_data_parser('Link\ detected:\ (\S+)',
-                                       raw_ethtool_extended)
+            link = search_data_for_match('Link\ detected:\ (\S+)',
+                                         raw_ethtool_extended)
             devicedata.append(link)
 
         if args.ipv4:
-            ipv4 = generic_data_parser('inet addr:(\S+)', raw_ifconfig)
+            ipv4 = search_data_for_match('inet addr:(\S+)', raw_ifconfig)
             devicedata.append(ipv4)
 
         if args.ipv6:
-            ipv6 = generic_data_parser('inet6 addr: (\S+)', raw_ifconfig)
+            ipv6 = search_data_for_match('inet6 addr: (\S+)', raw_ifconfig)
             devicedata.append(ipv6)
 
         if args.mac:
-            mac = generic_data_parser('HWaddr (\S+)', raw_ifconfig)
+            mac = search_data_for_match('HWaddr (\S+)', raw_ifconfig)
             devicedata.append(mac)
 
         if args.show_type:
-            itype = generic_data_parser('encap:(\S+)', raw_ifconfig)
+            itype = search_data_for_match('encap:(\S+)', raw_ifconfig)
             devicedata.append(itype)
 
         if args.driver:
-            driver = generic_data_parser('driver:\ (\S+)', raw_ethtool)
+            driver = search_data_for_match('driver:\ (\S+)', raw_ethtool)
             devicedata.append(driver)
 
         if args.firmware_version:
-            firmware = generic_data_parser('firmware-version:\ (\S+)',
-                                           raw_ethtool)
+            firmware = search_data_for_match('firmware-version:\ (\S+)',
+                                             raw_ethtool)
             devicedata.append(firmware)
 
     else:
