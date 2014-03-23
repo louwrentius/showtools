@@ -91,7 +91,7 @@ def main():
 
     try:
         args = parser.parse_args()
-    except:
+    except OSError:
         parser.print_help()
         sys.exit(1)
 
@@ -101,95 +101,49 @@ def main():
 
     devicetype = args.devicetype
 
-    def get_table_header():
+    def get_table_header(args):
 
-        header = []
-        header.append("DEV")
+        header_options = (
+            ('model', 'Model', 'disk'),
+            ('serial', 'Serial Number', 'disk'),
+            ('size', 'GB', 'disk'),
+            ('firmware', 'Firmware', 'disk'),
+            ('controller', 'Controller', 'disk'),
+            ('pcipath', '/dev/disk/by-path', 'disk'),
+            ('wwn', '/dev/disk/by-id/wwn*', 'disk'),
+            ('scsi', '/dev/disk/by-id/scsi*', 'disk'),
+            ('temp', 'Temp', 'disk'),
+            ('hours', 'Hours', 'disk'),
+            ('pending', 'PS', 'disk'),
+            ('reallocated', 'RS', 'disk'),
+            ('reallocatedevent', 'RSE', 'disk'),
+            ('crc', 'CRC', 'disk'),
+            ('link', 'Link', 'net'),
+            ('ipv4', 'IPv4', 'net'),
+            ('ipv6', 'IPv6', 'net'),
+            ('mac', 'MAC', 'net'),
+            ('show_type', 'Type', 'net'),
+            ('driver', 'Driver', 'net'),
+            ('firmware', 'Firmware', 'net'))
 
-        if args.all_opts:
-            d = vars(args)
-            for var in d:
-                if not var == "devicetype":
-                    d[var] = True
+        header = ['Dev']
 
-        if devicetype == "disk":
-            #
-            # Basic Storage
-            #
+        for option in header_options:
+            if option[2] == args.devicetype:
+                if args.all_opts or getattr(args, option[0]):
+                        if option[2] == args.devicetype:
+                            header.append(option[1])
 
-            if args.model:
-                header.append("MODEL")
-            if args.serial:
-                header.append("SERIAL NUMBER")
-            if args.size:
-                header.append("GB")
-            if args.firmware:
-                header.append("FIRMWARE")
-            if args.controller:
-                header.append("CONTROLLER")
-            if args.pcipath:
-                header.append("/DEV/DISK/BY-PATH")
-            if args.wwn:
-                header.append("/DEV/DISK/BY-ID/WWN*")
-            if args.scsi:
-                header.append("/DEV/DISK/BY-ID/SCSI*")
-
-            #
-            # SMART Storage
-            #
-
-            if args.temp:
-                header.append("Temp")
-
-            if args.hours:
-                header.append("Hours")
-
-            if args.pending:
-                header.append("PS")
-
-            if args.reallocated:
-                header.append("RS")
-
-            if args.reallocatedevent:
-                header.append("RSE")
-
-            if args.crc:
-                header.append("CRC")
-
-        elif devicetype == "net":
-            #
-            # Network
-            #
-            if args.link:
-                header.append("Link")
-
-            if args.ipv4:
-                header.append("IPv4")
-
-            if args.ipv6:
-                header.append("IPv6")
-
-            if args.mac:
-                header.append("MAC")
-
-            if args.show_type:
-                header.append("Type")
-
-            if args.driver:
-                header.append("Driver")
-
-            if args.firmware_version:
-                header.append("Firmware")
+        #print "Header " + str(header)
 
         return header
 
     table_data = []
-
-    table_header = get_table_header()
+    table_header = get_table_header(args)
 
     for device in get_devices(devicetype):
         if not device.startswith("md") and not device.startswith("ram"):
-            devicedata = process_device(device,  args)
+            devicedata = process_device(device, args)
             if devicedata:
                 table_data.append(devicedata)
 
@@ -350,8 +304,12 @@ def get_hdparm_data(device):
                          stderr=subprocess.PIPE,  shell=True)
     rawdata = p.communicate()
     returncode = p.returncode
-    if returncode or rawdata[1]:
-        raise Exception(rawdata)
+    if returncode == 13:
+        raise IOError
+    if returncode == 127:
+        raise OSError
+    if returncode > 0:
+       pass  
     return rawdata
 
 
@@ -360,8 +318,12 @@ def get_disk_data(device):
     try:
         data = get_hdparm_data(device)
         return data[0]
-    except Exception:
-        return ""
+    except IOError:
+        print "Error: Did you use sudo or are you root?"
+        sys.exit(1)
+    except OSError:
+        print "Error: is hdparm installed?"
+    sys.exit(1)
 
 #
 # Processing of SMART DATA
@@ -409,7 +371,7 @@ def get_smart_data(device):
         child = subprocess.Popen(['smartctl',  '-a',  '-d',  'ata',  device],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
-    except:
+    except OSError:
         print "Executing smartctl gave an error, is smartmontools installed?"
         sys.exit(1)
 
@@ -469,17 +431,17 @@ def get_interface_type(data):
 
 
 def is_smart_used(args):
-    if args.temp:
+    if args.temp or args.all_opts:
         return True
-    if args.hours:
+    if args.hours or args.all_opts:
         return True
-    if args.pending:
+    if args.pending or args.all_opts:
         return True
-    if args.reallocated:
+    if args.reallocated or args.all_opts:
         return True
-    if args.reallocatedevent:
+    if args.reallocatedevent or args.all_opts:
         return True
-    if args.crc:
+    if args.crc or args.all_opts:
         return True
     return False
 
@@ -510,34 +472,34 @@ def process_device(dev, args):
         if is_smart_used(args):
             disksmart = get_smart_data(fullpath)
 
-        if args.model:
+        if args.model or args.all_opts:
             diskmodel = get_disk_model(diskdata)
             devicedata.append(diskmodel)
 
-        if args.serial:
+        if args.serial or args.all_opts:
             diskserial = get_disk_serial(diskdata)
             devicedata.append(diskserial)
 
-        if args.size:
+        if args.size or args.all_opts:
             devicedata.append(disksize)
 
-        if args.firmware:
+        if args.firmware or args.all_opts:
             diskfw = get_disk_firmware(diskdata)
             devicedata.append(diskfw)
 
-        if args.controller:
+        if args.controller or args.all_opts:
             pcidevice = get_pci_device_name(dev, pci_devices, disk_paths)
             devicedata.append(pcidevice)
 
-        if args.pcipath:
+        if args.pcipath or args.all_opts:
             devicepath = get_disk_path(dev, disk_paths)
             devicedata.append(devicepath)
 
-        if args.wwn:
+        if args.wwn or args.all_opts:
             devicewwn = get_disk_wwn(dev, disk_wwns)
             devicedata.append(devicewwn)
 
-        if args.scsi:
+        if args.scsi or args.all_opts:
             devicescsi = get_disk_scsi(dev, disk_wwns)
             devicedata.append(devicescsi)
 
@@ -545,17 +507,17 @@ def process_device(dev, args):
         # SMART DATA
         #
 
-        if args.temp:
+        if args.temp or args.all_opts:
             disktemp = get_parameter_from_smart(disksmart,
                                                 'Temperature_Celsius', 10)
             devicedata.append(disktemp)
 
-        if args.hours:
+        if args.hours or args.all_opts:
             diskpoweronhours = get_parameter_from_smart(disksmart,
                                                         'Power_On_Hours', 12)
             devicedata.append(diskpoweronhours)
 
-        if args.pending:
+        if args.pending or args.all_opts:
             match1 = get_parameter_from_smart(disksmart,
                                               'Total_Pending_Sectors', 10)
             match2 = get_parameter_from_smart(disksmart,
@@ -570,18 +532,18 @@ def process_device(dev, args):
 
             devicedata.append(diskcurrentpending)
 
-        if args.reallocated:
+        if args.reallocated or args.all_opts:
             diskreallocatedsector = \
                 get_parameter_from_smart(disksmart, 'Reallocated_Sector_Ct', 9)
             devicedata.append(diskreallocatedsector)
 
-        if args.reallocatedevent:
+        if args.reallocatedevent or args.all_opts:
             diskreallocatedevent = \
                 get_parameter_from_smart(disksmart,
                                          'Reallocated_Event_Count', 9)
             devicedata.append(diskreallocatedevent)
 
-        if args.crc:
+        if args.crc or args.all_opts:
             diskudmacrcerror =\
                 get_parameter_from_smart(disksmart, 'UDMA_CRC_Error_Count',
                                          10)
@@ -596,35 +558,33 @@ def process_device(dev, args):
         raw_ifconfig = get_interface_data(dev)
         raw_ethtool = get_driver_data(dev, "-i")
         raw_ethtool_extended = get_driver_data(dev, "")
-        #print raw_ethtool
-        #print raw_ethtool_extended
 
-        if args.link:
+        if args.link or args.all_opts:
             link = search_data_for_match('Link\ detected:\ (\S+)',
                                          raw_ethtool_extended)
             devicedata.append(link)
 
-        if args.ipv4:
+        if args.ipv4 or args.all_opts:
             ipv4 = search_data_for_match('inet addr:(\S+)', raw_ifconfig)
             devicedata.append(ipv4)
 
-        if args.ipv6:
+        if args.ipv6 or args.all_opts:
             ipv6 = search_data_for_match('inet6 addr: (\S+)', raw_ifconfig)
             devicedata.append(ipv6)
 
-        if args.mac:
+        if args.mac or args.all_opts:
             mac = search_data_for_match('HWaddr (\S+)', raw_ifconfig)
             devicedata.append(mac)
 
-        if args.show_type:
+        if args.show_type or args.all_opts:
             itype = search_data_for_match('encap:(\S+)', raw_ifconfig)
             devicedata.append(itype)
 
-        if args.driver:
+        if args.driver or args.all_opts:
             driver = search_data_for_match('driver:\ (\S+)', raw_ethtool)
             devicedata.append(driver)
 
-        if args.firmware_version:
+        if args.firmware_version or args.all_opts:
             firmware = search_data_for_match('firmware-version:\ (\S+)',
                                              raw_ethtool)
             devicedata.append(firmware)
@@ -632,6 +592,8 @@ def process_device(dev, args):
     else:
         print "This is a bug,  please inform the developer."
         sys.exit(1)
+
+    #print "Devicedata " + str(devicedata)
 
     return devicedata
 
@@ -664,11 +626,19 @@ def get_collumn_size(table_header, table_data):
 
         length = max(collumn)
         col_widths.append(length)
+
     #print "All coll widths: " + str(col_widths)
+
     return col_widths
 
 
 def display_table(table_header, table_data):
+
+    header_length = len(table_header)
+    data_length = len(table_data[0])
+
+    assert header_length == data_length, "Column count mismatch! %r/%r" % (header_length, data_length)
+
     col_widths = get_collumn_size(table_header, table_data)
 
     # Dirty hack to get a closing pipe character at the end of the row
