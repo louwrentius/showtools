@@ -286,6 +286,8 @@ def get_disk_size(dev):
     if data:
         raw = generic_match_finder("", data, ", ", 1, ", ", 0)
         bytes = raw.split(" ")[0]
+        #Patch for " "octects of last entry
+        bytes = bytes.split('\xc2')[0]
         gb = int(bytes) / 1000000000
         return str(gb)
     else:
