@@ -201,8 +201,8 @@ def get_pci_devices():
                                        subprocess.PIPE).communicate()[0]
         return pci_devices
     except:
-        print "Error when executing lspci,  you might need 'pciutils'\
-                 if you run a Red Hat flavour."
+        print ("Error when executing lspci, you might need 'pciutils' " +  
+                 "if you run a Red Hat flavour.")
         sys.exit(1)
 
 
