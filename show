@@ -2,7 +2,7 @@
 #
 # Author: Louwrentius
 #
-# Requirement: hdparm
+# Requirement: hdparm, ethtool, smartmontools
 #
 
 # Version: 1.02
