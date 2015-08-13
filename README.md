@@ -55,6 +55,7 @@ Usage:
       -a, --all-opts        show all information
       -m, --model           device model
       -S, --serial          device serial number
+      -D, --state           drive power status (active/standby)
       -s, --size            device size in Gigabytes
       -f, --firmware        device firmware version
       -c, --controller      controller to which device is connected
