@@ -37,6 +37,8 @@ def set_arguments():
                     action="store_true",  help="device serial number")
     sg.add_argument("-D",  "--state",  action="store_true",
                     help="drive power status (active/standby)")
+    sg.add_argument("-e",  "--apm",  action="store_true",
+                    help="Advanced Power Mode")
     sg.add_argument("-s",  "--size",
                     action="store_true",  help="device size in Gigabytes")
     sg.add_argument("-f",  "--firmware",  action="store_true",
@@ -112,6 +114,7 @@ def main():
             ('model', 'Model', 'disk'),
             ('serial', 'Serial Number', 'disk'),
             ('state', 'State', 'disk'),
+            ('apm', 'APM', 'disk'),
             ('size', 'GB', 'disk'),
             ('firmware', 'Firmware', 'disk'),
             ('controller', 'Controller', 'disk'),
@@ -283,6 +286,10 @@ def get_disk_serial(hdparmdata):
 def get_disk_drivestate(hdparmdata):
     drivestate = generic_match_finder("", hdparmdata, 'drive state is:', 1, ", ", 0)
     return drivestate.strip()
+
+def get_disk_apmstate(hdparmdata):
+    apmstate = generic_match_finder("", hdparmdata, 'Advanced power management level:', 1, ", ", 0)
+    return apmstate.strip()
 
 def get_fdisk_size(device):
     command = "fdisk -l /dev/" + device
@@ -500,6 +507,10 @@ def process_device(dev, args):
         if args.state or args.all_opts:
             drivestate = get_disk_drivestate(diskdata)
             devicedata.append(drivestate)
+
+        if args.apm or args.all_opts:
+            apmstate = get_disk_apmstate(diskdata)
+            devicedata.append(apmstate)
 
         if args.size or args.all_opts:
             devicedata.append(disksize)
