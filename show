@@ -64,6 +64,8 @@ def set_arguments():
     ss.add_argument("-R",  "--reallocatedevent",  action="store_true",  help=
                     "reallocated sector event count")
     ss.add_argument("-C",  "--crc",  action="store_true",  help="CRC error")
+    ss.add_argument("-u",  "--startstop",  action="store_true",  help="spin up/down")
+    ss.add_argument("-n",  "--park",  action="store_true",  help="head parking")
 
 
     nw = parser.add_argument_group(title="Network",
@@ -122,6 +124,8 @@ def main():
             ('reallocated', 'RS', 'disk'),
             ('reallocatedevent', 'RSE', 'disk'),
             ('crc', 'CRC', 'disk'),
+            ('startstop', 'Spin', 'disk'),
+            ('park', 'Park', 'disk'),
             ('link', 'Link', 'net'),
             ('ipv4', 'IPv4', 'net'),
             ('ipv6', 'IPv6', 'net'),
@@ -452,6 +456,10 @@ def is_smart_used(args):
         return True
     if args.crc or args.all_opts:
         return True
+    if args.startstop or args.all_opts:
+        return True
+    if args.park or args.all_opts:
+        return True
     return False
 
 
@@ -562,6 +570,18 @@ def process_device(dev, args):
                                          10)
             devicedata.append(diskudmacrcerror)
 
+        if args.startstop or args.all_opts:
+            diskstartstop =\
+                get_parameter_from_smart(disksmart, 'Start_Stop_Count',
+                                         10)
+            devicedata.append(diskstartstop)
+
+        if args.park or args.all_opts:
+            diskloadcycle =\
+                get_parameter_from_smart(disksmart, 'Load_Cycle_Count',
+                                         10)
+            devicedata.append(diskloadcycle)
+
     #
     # Network data
     #
@@ -603,7 +623,7 @@ def process_device(dev, args):
             devicedata.append(firmware)
 
     else:
-        print "This is a bug,  please inform the developer."
+        print "This is a bug, please inform the developer."
         sys.exit(1)
 
     #print "Devicedata " + str(devicedata)
