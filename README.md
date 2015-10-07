@@ -33,12 +33,9 @@ Show /dev/disk/by-\* information:
 Usage:
 
     root@nano:~/gold/showtools# ./show
-    usage: show [-h] [-a] [-m] [-S] [-s] [-f] [-c] [-p] [-w] [-o] [-t] [-H] [-P]
-                [-r] [-R] [-C] [-l] [-4] [-6] [-M] [-T] [-d] [-F]
-                {disk,net}
-    show: error: too few arguments
-    usage: show [-h] [-a] [-m] [-S] [-s] [-f] [-c] [-p] [-w] [-o] [-t] [-H] [-P]
-                [-r] [-R] [-C] [-l] [-4] [-6] [-M] [-T] [-d] [-F]
+    usage: show [-h] [-E] [-g] [-a] [-m] [-S] [-D] [-e] [-s] [-f] [-c] [-p] [-w]
+                [-o] [-t] [-H] [-P] [-r] [-R] [-C] [-u] [-n] [-l] [-4] [-6] [-M]
+                [-T] [-d] [-F]
                 {disk,net}
 
     Show detailed disk|net device information in ASCII table format
@@ -49,6 +46,12 @@ Usage:
     optional arguments:
       -h, --help            show this help message and exit
 
+    Generic settings:
+      Options that apply for all device types.
+
+      -E, --transparent     Disable table formatting (no lines)
+      -g, --noheader        Disable table header (in transparent mode)
+
     Storage (generic):
       Generic options for storage devices
 
@@ -56,6 +59,7 @@ Usage:
       -m, --model           device model
       -S, --serial          device serial number
       -D, --state           drive power status (active/standby)
+      -e, --apm             Advanced Power Mode
       -s, --size            device size in Gigabytes
       -f, --firmware        device firmware version
       -c, --controller      controller to which device is connected
@@ -68,14 +72,16 @@ Usage:
 
       -t, --temp            temperature in Celcius
       -H, --hours           power on hours
-      -P, --pending         pending sector count
+      -P, --pending         pendinag sector count
       -r, --reallocated     reallocated sector count
       -R, --reallocatedevent
                             reallocated sector event count
       -C, --crc             CRC error
+      -u, --startstop       spin up/down
+      -n, --park            head parking
 
     Network:
-      Available options for network devices
+      Available options for `network devices
 
       -l, --link            network card link status
       -4, --ipv4            IPv4 address
