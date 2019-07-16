@@ -615,15 +615,15 @@ def process_device(dev, args):
             devicedata.append(link)
 
         if args.ipv4 or args.all_opts:
-            ipv4 = search_data_for_match('inet addr:(\S+)', raw_ifconfig)
+            ipv4 = search_data_for_match('inet (\S+)', raw_ifconfig)
             devicedata.append(ipv4)
 
         if args.ipv6 or args.all_opts:
-            ipv6 = search_data_for_match('inet6 addr: (\S+)', raw_ifconfig)
+            ipv6 = search_data_for_match('inet6 (\S+)', raw_ifconfig)
             devicedata.append(ipv6)
 
         if args.mac or args.all_opts:
-            mac = search_data_for_match('HWaddr (\S+)', raw_ifconfig)
+            mac = search_data_for_match('ether (\S+)', raw_ifconfig)
             devicedata.append(mac)
 
         if args.show_type or args.all_opts:
