@@ -427,7 +427,7 @@ def search_data_for_match(regex, data):
 
 
 def get_interface_data(interface):
-    raw_data = subprocess.Popen(['ifconfig',  interface],
+    raw_data = subprocess.Popen(['ip','a','show', interface],
                                 stdout=subprocess.PIPE).communicate()[0]
     return raw_data
 
