@@ -10,9 +10,9 @@ Examples:
 
 Show information about network interfaces:
 
-![network][0]
+![network][netw]
 
-[0]: http://louwrentius.com/static/images/shownet.png
+[netw]: http://louwrentius.com/static/images/shownet.png
 
 Show SMART information about disks:
 
