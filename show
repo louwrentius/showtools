@@ -123,6 +123,7 @@ def main():
             ('state', 'State', 'disk'),
             ('apm', 'APM', 'disk'),
             ('size', 'GB', 'disk'),
+            ('Speed', 'Gbps', 'disk'),
             ('firmware', 'Firmware', 'disk'),
             ('controller', 'Controller', 'disk'),
             ('pcipath', '/dev/disk/by-path', 'disk'),
@@ -142,8 +143,7 @@ def main():
             ('mac', 'MAC', 'net'),
             ('show_type', 'Type', 'net'),
             ('driver', 'Driver', 'net'),
-            ('firmware', 'Firmware', 'net'),
-            ('Speed', 'Gbps', 'disk'))
+            ('firmware', 'Firmware', 'net'))
 
         header = ['Dev']
 
@@ -529,6 +529,10 @@ def process_device(dev, args):
         if args.size or args.all_opts:
             devicedata.append(disksize)
 
+        if args.speed or args.all_opts:
+            linkspeed = get_disk_speed(disksmart)
+            devicedata.append(linkspeed)
+
         if args.firmware or args.all_opts:
             diskfw = get_disk_firmware(diskdata)
             devicedata.append(diskfw)
@@ -607,9 +611,7 @@ def process_device(dev, args):
                                          10)
             devicedata.append(diskloadcycle)
 
-        if args.speed or args.all_opts:
-            linkspeed = get_disk_speed(disksmart)
-            devicedata.append(linkspeed)
+
     #
     # Network data
     #
