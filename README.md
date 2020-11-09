@@ -33,10 +33,10 @@ Show /dev/disk/by-\* information:
 Usage:
 
     root@nano:~/gold/showtools# ./show
-    usage: show [-h] [-E] [-g] [-a] [-m] [-S] [-D] [-e] [-s] [-f] [-c] [-p] [-w]
-                [-o] [-t] [-H] [-P] [-r] [-R] [-C] [-u] [-n] [-l] [-4] [-6] [-M]
-                [-T] [-d] [-F]
-                {disk,net}
+    usage: show [-h] [-E] [-g] [-a] [-m] [-S] [-D] [-e] [-s] [-z] [-f] [-c] [-p]
+            [-w] [-o] [-t] [-H] [-P] [-r] [-R] [-C] [-u] [-n] [-l] [-4] [-6]
+            [-M] [-T] [-d] [-F]
+            {disk,net}
 
     Show detailed disk|net device information in ASCII table format
 
@@ -61,6 +61,7 @@ Usage:
       -D, --state           drive power status (active/standby)
       -e, --apm             Advanced Power Mode
       -s, --size            device size in Gigabytes
+      -z, --speed           SATA Link in Gbps
       -f, --firmware        device firmware version
       -c, --controller      controller to which device is connected
       -p, --pcipath         /dev/disk/by-path/ ID of the device
@@ -91,4 +92,5 @@ Usage:
       -d, --driver          driver module
       -F, --firmware-version
                             firmware version
+
 
