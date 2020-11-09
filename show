@@ -61,6 +61,7 @@ def set_arguments():
     ss = parser.add_argument_group(title="Storage (SMART)",  description=
                                    "Options based on SMART values of storage\
                                      devices")
+    ss.add_argument("-z",  "--speed",  action="store_true",  help="SATA Link in Gbps")
     ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature\
                     in Celcius")
     ss.add_argument("-H",  "--hours",  action="store_true",  help="power on\
@@ -122,7 +123,7 @@ def main():
             ('state', 'State', 'disk'),
             ('apm', 'APM', 'disk'),
             ('size', 'GB', 'disk'),
-            ('Link', 'Gbps', 'disk'),
+            ('Speed', 'Gbps', 'disk'),
             ('firmware', 'Firmware', 'disk'),
             ('controller', 'Controller', 'disk'),
             ('pcipath', '/dev/disk/by-path', 'disk'),
@@ -306,6 +307,10 @@ def get_fdisk_size(device):
     return rawdata[0]
 
 
+def get_disk_speed(device):
+    print("test")
+
+
 def get_disk_size(dev):
     data = get_fdisk_size(dev)
     if data:
@@ -474,6 +479,8 @@ def is_smart_used(args):
         return True
     if args.park or args.all_opts:
         return True
+    if args.speed or args.all_opts:
+        return True
     return False
 
 
@@ -600,6 +607,9 @@ def process_device(dev, args):
                                          10)
             devicedata.append(diskloadcycle)
 
+        if args.speed or args.all_opts:
+            linkspeed = get_disk_speed(disksmart)
+            devicedata.append(linkspeed)
     #
     # Network data
     #
