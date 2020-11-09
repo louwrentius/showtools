@@ -123,7 +123,6 @@ def main():
             ('state', 'State', 'disk'),
             ('apm', 'APM', 'disk'),
             ('size', 'GB', 'disk'),
-            ('Speed', 'Gbps', 'disk'),
             ('firmware', 'Firmware', 'disk'),
             ('controller', 'Controller', 'disk'),
             ('pcipath', '/dev/disk/by-path', 'disk'),
@@ -143,7 +142,8 @@ def main():
             ('mac', 'MAC', 'net'),
             ('show_type', 'Type', 'net'),
             ('driver', 'Driver', 'net'),
-            ('firmware', 'Firmware', 'net'))
+            ('firmware', 'Firmware', 'net'),
+            ('Speed', 'Gbps', 'disk'))
 
         header = ['Dev']
 
@@ -308,7 +308,7 @@ def get_fdisk_size(device):
 
 
 def get_disk_speed(device):
-    return 0
+    return "6Gbps"
 
 
 def get_disk_size(dev):
