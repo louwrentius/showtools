@@ -365,6 +365,7 @@ def get_disk_data(device):
 
 
 def get_parameter_from_smart(data, parameter, distance):
+    data = data.decode('utf-8')
     regex = re.compile(parameter + '(.*)')
     match = regex.search(data)
 
