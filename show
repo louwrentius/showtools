@@ -429,6 +429,7 @@ def get_smart_data(device):
 
 
 def search_data_for_match(regex, data):
+    data = data.decode('utf-8')
     match = re.search(regex,  data)
     if match:
         return match.group(1)
