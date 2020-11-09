@@ -242,7 +242,7 @@ def get_all_disk_wwns():
 
 def generic_match_finder(device, data, pattern, matchgroup, split, itemnumber):
     for item in data.splitlines():
-        if device in str(item):
+        if device in item.decode('utf-8'):
             regex = re.compile(pattern + '(.*)')
             match = regex.search(item)
             if match:
