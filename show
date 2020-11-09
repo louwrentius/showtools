@@ -308,8 +308,8 @@ def get_fdisk_size(device):
 
 
 def get_disk_speed(smartdata):
-    print(smartdata)
-    return "6123"
+    match = generic_match_finder("", smartdata, 'SATA Version is', 1, ":", 0)
+    return match.strip()
 
 
 def get_disk_size(dev):
