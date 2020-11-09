@@ -123,7 +123,7 @@ def main():
             ('state', 'State', 'disk'),
             ('apm', 'APM', 'disk'),
             ('size', 'GB', 'disk'),
-            ('Speed', 'Gbps', 'disk'),
+            ('speed', 'Gbps', 'disk'),
             ('firmware', 'Firmware', 'disk'),
             ('controller', 'Controller', 'disk'),
             ('pcipath', '/dev/disk/by-path', 'disk'),
