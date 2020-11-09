@@ -644,7 +644,7 @@ def process_device(dev, args):
             devicedata.append(mac)
 
         if args.show_type or args.all_opts:
-            itype = search_data_for_match('encap:(\S+)', raw_ifconfig)
+            itype = search_data_for_match('link/(\S+)', raw_ifconfig)
             devicedata.append(itype)
 
         if args.driver or args.all_opts:
