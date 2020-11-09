@@ -308,7 +308,7 @@ def get_fdisk_size(device):
 
 
 def get_disk_speed(device):
-    print("test")
+    return 0
 
 
 def get_disk_size(dev):
