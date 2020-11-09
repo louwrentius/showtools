@@ -47,6 +47,7 @@ def set_arguments():
                     help="Advanced Power Mode")
     sg.add_argument("-s",  "--size",
                     action="store_true",  help="device size in Gigabytes")
+    sg.add_argument("-z",  "--speed",  action="store_true",  help="SATA Link in Gbps")
     sg.add_argument("-f",  "--firmware",  action="store_true",
                     help="device firmware version")
     sg.add_argument("-c",  "--controller",  action="store_true",
@@ -61,7 +62,6 @@ def set_arguments():
     ss = parser.add_argument_group(title="Storage (SMART)",  description=
                                    "Options based on SMART values of storage\
                                      devices")
-    ss.add_argument("-z",  "--speed",  action="store_true",  help="SATA Link in Gbps")
     ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature\
                     in Celcius")
     ss.add_argument("-H",  "--hours",  action="store_true",  help="power on\
