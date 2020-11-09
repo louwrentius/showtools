@@ -326,8 +326,8 @@ def get_disk_size(dev):
 
 
 def get_disk_firmware(hdparmdata):
-    match = generic_match_finder("", hdparmdata, 'Firmware Revision:', 1, ":", 0)
-    return match.strip()
+    match = generic_match_finder("", hdparmdata, 'Firmware Revision:', 1, ":", 2)
+    return match.strip(')')
 
 
 def get_hdparm_data(device):
