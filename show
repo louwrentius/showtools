@@ -307,8 +307,9 @@ def get_fdisk_size(device):
     return rawdata[0]
 
 
-def get_disk_speed(device):
-    return "6Gbps"
+def get_disk_speed(smartdata):
+    print(smartdata)
+    return "6123"
 
 
 def get_disk_size(dev):
