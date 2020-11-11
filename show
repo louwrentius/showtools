@@ -693,7 +693,7 @@ def get_collumn_size(table_header, table_data):
         length = max(collumn)
         col_widths.append(length)
 
-    print("All coll widths: " + str(col_widths))
+    # print("All coll widths: " + str(col_widths))
 
     return col_widths
 
