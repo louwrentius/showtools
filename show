@@ -246,7 +246,7 @@ def decode_data(data):
     elif isinstance(data, str):
         decoded = data
     else: 
-        print(f"I can't deal with type {isinstance(data)}")
+        print(f"I can't deal with type {type(data)}")
         sys.exit(1)
     return decoded
 
