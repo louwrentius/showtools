@@ -210,6 +210,7 @@ def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
     diskdevices.sort()
+    diskdevices = ["sda"]
     return diskdevices
 
 
@@ -239,10 +240,20 @@ def get_all_disk_wwns():
                                        stderr=subprocess.PIPE).communicate()[0]
     return disk_by_id_data
 
+def decode_data(data):
+    decoded = None
+    if isinstance(data, bytes):
+        decoded = data.decode('utf-8')
+    elif isinstance(data, str):
+        decoded = data
+    else: 
+        print(f"I can't deal with type {isinstance(data)}")
+        sys.exit(1)
+    return decoded
 
 def generic_match_finder(device, data, pattern, matchgroup, split, itemnumber):
     for item in data.splitlines():
-        item = item.decode('utf-8')
+        item = decode_data(item)
         if device in item:
             regex = re.compile(pattern + '(.*)')
             match = regex.search(item)
@@ -364,7 +375,7 @@ def get_disk_data(device):
 
 
 def get_parameter_from_smart(data, parameter, distance):
-    data = data.decode('utf-8')
+    data = item = decode_data(data)
     regex = re.compile(parameter + '(.*)')
     match = regex.search(data)
 
