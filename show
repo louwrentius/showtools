@@ -161,10 +161,9 @@ def main():
     table_header = get_table_header(args)
 
     for device in get_devices(devicetype):
-        if not device.startswith(("md", "ram", "loop", "dm")):
-            devicedata = process_device(device, args)
-            if devicedata:
-                table_data.append(devicedata)
+        devicedata = process_device(device, args)
+        if devicedata:
+            table_data.append(devicedata)
 
     display_table(table_header, table_data, args)
 
@@ -209,6 +208,7 @@ def get_interfaces():
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
+    diskdevices = list(filter(lambda d: not d.startswith(("md", "ram", "loop", "dm")), diskdevices))
     diskdevices.sort()
     return diskdevices
 
