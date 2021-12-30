@@ -161,7 +161,7 @@ def main():
     table_header = get_table_header(args)
 
     for device in get_devices(devicetype):
-        if not device.startswith("md") and not device.startswith("ram") and not device.startswith("loop"):
+        if not device.startswith(("md", "ram", "loop", "dm")):
             devicedata = process_device(device, args)
             if devicedata:
                 table_data.append(devicedata)
