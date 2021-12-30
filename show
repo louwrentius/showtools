@@ -730,6 +730,7 @@ def display_table(table_header, table_data, args):
     for col in col_widths:
         if args.transparent:
             form = "  %-" + str(col) + "s "
+            format += form
         else:
             form = "| %-" + str(col) + "s "
             format += form
