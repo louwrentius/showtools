@@ -572,7 +572,7 @@ def process_device(dev, args):
 
         if args.temp or args.all_opts:
             disktemp = get_parameter_from_smart(disksmart,
-                                                'Temperature_Celsius', 10)
+                                                '(?:Temperature_Celsius|Airflow_Temperature_Cel)', 10)
             devicedata.append(disktemp)
 
         if args.hours or args.all_opts:
