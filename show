@@ -373,27 +373,13 @@ def get_disk_data(device):
 #
 
 
-def get_parameter_from_smart(data, parameter, distance):
+def get_parameter_from_smart(data, parameter):
     data = item = decode_data(data)
     regex = re.compile(parameter + '(.*)')
     match = regex.search(data)
 
     if match:
-            tmp = match.group(1)
-            length = len(tmp.split("   "))
-            if length <= distance:
-                distance = length-1
-
-            #
-            # SMART data is often a bit of a mess,  so this
-            # hack is used to cope with this.
-            #
-
-            try:
-                model = match.group(1).split("   ")[distance].split(" ")[1]
-            except:
-                model = match.group(1).split("   ")[distance+1].split(" ")[1]
-            return str(model)
+        return re.sub(" +", " ", match.group()).split(" ")[8]
     return "?"
 
 
@@ -572,19 +558,19 @@ def process_device(dev, args):
 
         if args.temp or args.all_opts:
             disktemp = get_parameter_from_smart(disksmart,
-                                                '(?:Temperature_Celsius|Airflow_Temperature_Cel)', 10)
+                                                '(?:Temperature_Celsius|Airflow_Temperature_Cel)')
             devicedata.append(disktemp)
 
         if args.hours or args.all_opts:
             diskpoweronhours = get_parameter_from_smart(disksmart,
-                                                        'Power_On_Hours', 12)
+                                                        'Power_On_Hours')
             devicedata.append(diskpoweronhours)
 
         if args.pending or args.all_opts:
             match1 = get_parameter_from_smart(disksmart,
-                                              'Total_Pending_Sectors', 10)
+                                              'Total_Pending_Sectors')
             match2 = get_parameter_from_smart(disksmart,
-                                              'Current_Pending_Sector', 10)
+                                              'Current_Pending_Sector')
 
             if match1:
                 diskcurrentpending = match1
@@ -597,31 +583,28 @@ def process_device(dev, args):
 
         if args.reallocated or args.all_opts:
             diskreallocatedsector = \
-                get_parameter_from_smart(disksmart, 'Reallocated_Sector_Ct', 9)
+                get_parameter_from_smart(disksmart, 'Reallocated_Sector_Ct')
             devicedata.append(diskreallocatedsector)
 
         if args.reallocatedevent or args.all_opts:
             diskreallocatedevent = \
                 get_parameter_from_smart(disksmart,
-                                         'Reallocated_Event_Count', 9)
+                                         'Reallocated_Event_Count')
             devicedata.append(diskreallocatedevent)
 
         if args.crc or args.all_opts:
-            diskudmacrcerror =\
-                get_parameter_from_smart(disksmart, 'UDMA_CRC_Error_Count',
-                                         10)
+            diskudmacrcerror = get_parameter_from_smart(disksmart,
+                                                '(?:UDMA_CRC_Error_Count|CRC_Error_Count)')
             devicedata.append(diskudmacrcerror)
 
         if args.startstop or args.all_opts:
             diskstartstop =\
-                get_parameter_from_smart(disksmart, 'Start_Stop_Count',
-                                         10)
+                get_parameter_from_smart(disksmart, 'Start_Stop_Count')
             devicedata.append(diskstartstop)
 
         if args.park or args.all_opts:
             diskloadcycle =\
-                get_parameter_from_smart(disksmart, 'Load_Cycle_Count',
-                                         10)
+                get_parameter_from_smart(disksmart, 'Load_Cycle_Count')
             devicedata.append(diskloadcycle)
 
 
