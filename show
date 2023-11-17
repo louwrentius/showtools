@@ -5,14 +5,12 @@
 # Requirement: hdparm, ethtool, smartmontools
 #
 
-# Version: 1.03
-#
-
 import re
 import subprocess
 import sys
 import os
 import argparse
+import json
 
 
 def set_arguments():
@@ -118,32 +116,32 @@ def main():
     def get_table_header(args):
 
         header_options = (
-            ('model', 'Model', 'disk'),
-            ('serial', 'Serial Number', 'disk'),
-            ('state', 'State', 'disk'),
-            ('apm', 'APM', 'disk'),
-            ('size', 'GB', 'disk'),
-            ('speed', 'Gbps', 'disk'),
-            ('firmware', 'Firmware', 'disk'),
-            ('controller', 'Controller', 'disk'),
-            ('pcipath', '/dev/disk/by-path', 'disk'),
-            ('wwn', '/dev/disk/by-id/wwn*', 'disk'),
-            ('scsi', '/dev/disk/by-id/scsi*', 'disk'),
-            ('temp', 'Temp', 'disk'),
-            ('hours', 'Hours', 'disk'),
-            ('pending', 'PS', 'disk'),
-            ('reallocated', 'RS', 'disk'),
-            ('reallocatedevent', 'RSE', 'disk'),
-            ('crc', 'CRC', 'disk'),
-            ('startstop', 'Spin', 'disk'),
-            ('park', 'Park', 'disk'),
-            ('link', 'Link', 'net'),
-            ('ipv4', 'IPv4', 'net'),
-            ('ipv6', 'IPv6', 'net'),
-            ('mac', 'MAC', 'net'),
-            ('show_type', 'Type', 'net'),
-            ('driver', 'Driver', 'net'),
-            ('firmware', 'Firmware', 'net'))
+            ('model', 'Model', 'disk',"l"),
+            ('serial', 'Serial Number', 'disk',"l"),
+            ('state', 'State', 'disk',"r"),
+            ('apm', 'APM', 'disk',"r"),
+            ('size', 'GB', 'disk',"r"),
+            ('speed', 'Gbps', 'disk',"l"),
+            ('firmware', 'Firmware', 'disk',"l"),
+            ('controller', 'Controller', 'disk',"l"),
+            ('pcipath', '/dev/disk/by-path', 'disk',"l"),
+            ('wwn', '/dev/disk/by-id/wwn*', 'disk',"l"),
+            ('scsi', '/dev/disk/by-id/scsi*', 'disk',"l"),
+            ('temp', 'Temp', 'disk',"r"),
+            ('hours', 'Hours', 'disk',"r"),
+            ('pending', 'PS', 'disk',"r"),
+            ('reallocated', 'RS', 'disk',"r"),
+            ('reallocatedevent', 'RSE', 'disk',"r"),
+            ('crc', 'CRC', 'disk',"r"),
+            ('startstop', 'Spin', 'disk',"r"),
+            ('park', 'Park', 'disk',"r"),
+            ('link', 'Link', 'net',"r"),
+            ('ipv4', 'IPv4', 'net',"r"),
+            ('ipv6', 'IPv6', 'net',"r"),
+            ('mac', 'MAC', 'net',"r"),
+            ('show_type', 'Type', 'net',"r"),
+            ('driver', 'Driver', 'net',"r"),
+            ('firmware', 'Firmware', 'net',"r"))
 
         header = ['Dev']
 
@@ -319,27 +317,18 @@ def get_fdisk_size(device):
 
 
 def get_disk_speed(smartdata):
-    match = generic_match_finder("", smartdata, 'SATA Version is', 1, ":", 2)
-    return match.strip(')') 
+    returndata = get_generic_parameter_from_smart(smartdata, "speed")
+    return str(returndata) 
 
-
-def get_disk_size(dev):
-    data = get_fdisk_size(dev)
-    if data:
-        raw = generic_match_finder("", data, ", ", 1, ", ", 0)
-        bytes = raw.split(" ")[0]
-        #Patch for " "octects of last entry
-        gb = round(int(bytes) / 1000000000)
-        return str(gb)
-    else:
-        return ""
-
+def get_disk_size(smartdata):
+    rawdata = get_generic_parameter_from_smart(smartdata, "size")
+    returndata = round(float(rawdata) / 1000000000)
+    return str(returndata)
 
 def get_disk_firmware(hdparmdata):
     match = generic_match_finder("", hdparmdata, 'Firmware Revision:', 1, ":",
                                  0)
     return match.strip()
-
 
 def get_hdparm_data(device):
     command = "hdparm -IC " + device
@@ -352,12 +341,11 @@ def get_hdparm_data(device):
     if returncode == 127:
         raise OSError
     if returncode > 0:
-    	pass
+        pass
     return rawdata
 
 
 def get_disk_data(device):
-
     try:
         data = get_hdparm_data(device)
         return data[0]
@@ -372,47 +360,38 @@ def get_disk_data(device):
 # Processing of SMART DATA
 #
 
+def get_smart_attribute_from_json(json, attribute):
+    returndata = "?"
+    for item in json["ata_smart_attributes"]["table"]:
+        if item["name"] == attribute:
+            returndata = str(item["raw"]["value"])
+    return returndata
 
-def get_parameter_from_smart(data, parameter, distance):
-    data = item = decode_data(data)
-    regex = re.compile(parameter + '(.*)')
-    match = regex.search(data)
+def get_smart_conversion_dict():
+    conversion_dict = {
+        "temperature"               : ["temperature", "current"],
+        "model"                     : ["model_name"],
+        "firmware_version"           : ["firmware_version"],
+        "size"                      : ["user_capacity", "bytes"],
+        "speed"                     : ["interface_speed","current","string"]
+    }
+    return conversion_dict
 
-    if match:
-            tmp = match.group(1)
-            length = len(tmp.split("   "))
-            if length <= distance:
-                distance = length-1
-
-            #
-            # SMART data is often a bit of a mess,  so this
-            # hack is used to cope with this.
-            #
-
-            try:
-                model = match.group(1).split("   ")[distance].split(" ")[1]
-            except:
-                model = match.group(1).split("   ")[distance+1].split(" ")[1]
-            return str(model)
-    return "?"
-
+def get_generic_parameter_from_smart(data, parameter):
+    table = get_smart_conversion_dict()
+    path = table[parameter]
+    returndata = data
+    for x in path:
+        try:
+            returndata = returndata[x]
+        except KeyError:
+            returndata = "?"
+            break
+    return str(returndata)
 
 def get_smart_data(device):
-
-    #
-    # For debugging purposes
-    #
     try:
-        file = os.environ['smartdata']
-        if os.path.isfile(file):
-            f = open(file,  'r')
-            data = f.read()
-            return data
-    except:
-        pass
-
-    try:
-        child = subprocess.Popen(['smartctl',  '-a',  '-d',  'ata',  device],
+        child = subprocess.Popen(['smartctl', '-j',  '-a',  '-d',  'ata',  device],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
     except OSError:
@@ -422,7 +401,7 @@ def get_smart_data(device):
     rawdata = child.communicate()
 
     if child.returncode:
-        child = subprocess.Popen(['smartctl',  '-a',  device],
+        child = subprocess.Popen(['smartctl', '-j',  '-a',  device],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         rawdata = child.communicate()
@@ -430,6 +409,10 @@ def get_smart_data(device):
             return ""
 
     smartdata = rawdata[0]
+    try:
+        smartdata = json.loads(smartdata)
+    except json.JSONDecodeError as e:
+        print("Invalid JSON syntax:", e)    
     return smartdata
 
 #
@@ -512,10 +495,7 @@ def process_device(dev, args):
         fullpath = "/dev/" + dev
 
         diskdata = get_disk_data(fullpath)
-        disksize = get_disk_size(dev)
-        if not disksize:
-            return None
-
+        
         pci_devices = get_pci_devices()
         disk_paths = get_all_disk_paths()
         disk_wwns = get_all_disk_wwns()
@@ -540,6 +520,7 @@ def process_device(dev, args):
             devicedata.append(apmstate)
 
         if args.size or args.all_opts:
+            disksize = get_disk_size(disksmart)
             devicedata.append(disksize)
 
         if args.speed or args.all_opts:
@@ -570,21 +551,23 @@ def process_device(dev, args):
         # SMART DATA
         #
 
+
+
         if args.temp or args.all_opts:
-            disktemp = get_parameter_from_smart(disksmart,
-                                                'Temperature_Celsius', 10)
+            disktemp = get_generic_parameter_from_smart(disksmart,
+                                                'temperature')
             devicedata.append(disktemp)
 
         if args.hours or args.all_opts:
-            diskpoweronhours = get_parameter_from_smart(disksmart,
-                                                        'Power_On_Hours', 12)
+            diskpoweronhours = get_smart_attribute_from_json(disksmart,
+                                                        'Power_On_Hours')
             devicedata.append(diskpoweronhours)
 
         if args.pending or args.all_opts:
-            match1 = get_parameter_from_smart(disksmart,
-                                              'Total_Pending_Sectors', 10)
-            match2 = get_parameter_from_smart(disksmart,
-                                              'Current_Pending_Sector', 10)
+            match1 = get_smart_attribute_from_json(disksmart,
+                                              'Total_Pending_Sectors')
+            match2 = get_smart_attribute_from_json(disksmart,
+                                              'Current_Pending_Sector')
 
             if match1:
                 diskcurrentpending = match1
@@ -597,31 +580,29 @@ def process_device(dev, args):
 
         if args.reallocated or args.all_opts:
             diskreallocatedsector = \
-                get_parameter_from_smart(disksmart, 'Reallocated_Sector_Ct', 9)
+                get_smart_attribute_from_json(disksmart, 'Reallocated_Sector_Ct')
             devicedata.append(diskreallocatedsector)
 
         if args.reallocatedevent or args.all_opts:
-            diskreallocatedevent = \
-                get_parameter_from_smart(disksmart,
-                                         'Reallocated_Event_Count', 9)
+            diskreallocatedevent = get_smart_attribute_from_json(disksmart,"Reallocated_Event_Count")
+            #diskreallocatedevent = \
+            #    get_parameter_from_smart(disksmart,
+            #                             'Reallocated_Event_Count', 9)
             devicedata.append(diskreallocatedevent)
 
         if args.crc or args.all_opts:
             diskudmacrcerror =\
-                get_parameter_from_smart(disksmart, 'UDMA_CRC_Error_Count',
-                                         10)
+                get_smart_attribute_from_json(disksmart, 'UDMA_CRC_Error_Count')
             devicedata.append(diskudmacrcerror)
 
         if args.startstop or args.all_opts:
             diskstartstop =\
-                get_parameter_from_smart(disksmart, 'Start_Stop_Count',
-                                         10)
+                get_smart_attribute_from_json(disksmart, 'Start_Stop_Count')
             devicedata.append(diskstartstop)
 
         if args.park or args.all_opts:
             diskloadcycle =\
-                get_parameter_from_smart(disksmart, 'Load_Cycle_Count',
-                                         10)
+                get_smart_attribute_from_json(disksmart, 'Load_Cycle_Count')
             devicedata.append(diskloadcycle)
 
 
