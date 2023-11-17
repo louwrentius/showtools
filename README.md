@@ -91,7 +91,4 @@ Network:
                         firmware version
 ```
 
-    
-### Code quality
-
-Showtools is one of the first Python programs I wrote and it shows. Some of the things I do are not optimal, the program would be due for a rewrite. But it works...
+ 
