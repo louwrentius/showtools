@@ -5,97 +5,54 @@
 # Requirement: hdparm, ethtool, smartmontools
 #
 
-# Version: 1.03
-#
-
 import re
 import subprocess
 import sys
 import os
 import argparse
-
+import json
 
 def set_arguments():
-
-    #
-    # Parse command line options
-    #
-
-    parser = argparse.ArgumentParser(description='Show detailed disk|net \
-                                device information in ASCII table format')
-    parser.add_argument('devicetype',  choices=['disk',  'net'],
-                        help="Show disk information")
+    parser = argparse.ArgumentParser(description='Show detailed disk|net device information in ASCII table format')
+    parser.add_argument('devicetype',  choices=['disk', 'net'], help="Show disk information")
 
     sa = parser.add_argument_group(title="Generic settings", description="Options that apply for all device types.")
-    sa.add_argument("-E",  "--transparent",
-                    action="store_true",  help="Disable table formatting (no lines)")
-    sa.add_argument("-g",  "--noheader",
-                    action="store_true",  help="Disable table header (in transparent mode)")
+    sa.add_argument("-E",  "--transparent", action="store_true", help="Disable table formatting (no lines)")
+    sa.add_argument("-g",  "--noheader", action="store_true",  help="Disable table header (in transparent mode)")
 
-    sg = parser.add_argument_group(title="Storage (generic)",
-                                   description="Generic\
-                                    options for storage devices")
-    sg.add_argument("-a",  "--all-opts",
-                    action="store_true",  help="show all information")
-    sg.add_argument("-m",  "--model",
-                    action="store_true",  help="device model")
-    sg.add_argument("-S",  "--serial",
-                    action="store_true",  help="device serial number")
-    sg.add_argument("-D",  "--state",  action="store_true",
-                    help="drive power status (active/standby)")
-    sg.add_argument("-e",  "--apm",  action="store_true",
-                    help="Advanced Power Mode")
-    sg.add_argument("-s",  "--size",
-                    action="store_true",  help="device size in Gigabytes")
-    sg.add_argument("-z",  "--speed",  action="store_true",  help="SATA Link in Gbps")
-    sg.add_argument("-f",  "--firmware",  action="store_true",
-                    help="device firmware version")
-    sg.add_argument("-c",  "--controller",  action="store_true",
-                    help="controller to which device is connected")
-    sg.add_argument("-p",  "--pcipath",  action="store_true",
-                    help="/dev/disk/by-path/ ID of the device")
-    sg.add_argument("-w",  "--wwn",  action="store_true",
-                    help="device World Wide Name")
-    sg.add_argument("-o",  "--scsi",  action="store_true",
-                    help="/dev/by-id/scsi")
+    sg = parser.add_argument_group(title="Storage (generic)", description="Generic options for storage devices")
+    sg.add_argument("-a",  "--all-opts", action="store_true",  help="show all information")
+    sg.add_argument("-m",  "--model",action="store_true", help="device model")
+    sg.add_argument("-k",  "--type",action="store_true", help="device type (HDD/SDD)")
+    sg.add_argument("-S",  "--serial",action="store_true", help="device serial number")
+    sg.add_argument("-D",  "--state", action="store_true", help="drive power status (active/standby)")
+    sg.add_argument("-e",  "--apm", action="store_true", help="Advanced Power Mode")
+    sg.add_argument("-s",  "--size", action="store_true", help="device size in Gigabytes")
+    sg.add_argument("-z",  "--speed", action="store_true", help="SATA Link in Gbps")
+    sg.add_argument("-f",  "--firmware", action="store_true", help="device firmware version")
+    sg.add_argument("-c",  "--controller",  action="store_true", help="controller to which device is connected")
+    sg.add_argument("-p",  "--pcipath",  action="store_true", help="/dev/disk/by-path/ ID of the device")
+    sg.add_argument("-w",  "--wwn",  action="store_true", help="device World Wide Name")
+    sg.add_argument("-o",  "--scsi",  action="store_true", help="/dev/by-id/scsi")
 
-    ss = parser.add_argument_group(title="Storage (SMART)",  description=
-                                   "Options based on SMART values of storage\
-                                     devices")
-    ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature\
-                    in Celcius")
-    ss.add_argument("-H",  "--hours",  action="store_true",  help="power on\
-                    hours")
-    ss.add_argument("-P",  "--pending",  action="store_true",  help="pendinag\
-                    sector count")
-    ss.add_argument("-r",  "--reallocated",  action="store_true",  help=
-                    "reallocated sector count")
-    ss.add_argument("-R",  "--reallocatedevent",  action="store_true",  help=
-                    "reallocated sector event count")
+    ss = parser.add_argument_group(title="Storage (SMART)",  description="Options based on SMART values of storage devices")
+    ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature in Celcius")
+    ss.add_argument("-H",  "--hours",  action="store_true",  help="power on hours")
+    ss.add_argument("-P",  "--pending",  action="store_true",  help="pending sector count")
+    ss.add_argument("-r",  "--reallocated",  action="store_true",  help="reallocated sector count")
+    ss.add_argument("-R",  "--reallocatedevent",  action="store_true",  help="reallocated sector event count")
     ss.add_argument("-C",  "--crc",  action="store_true",  help="CRC error")
     ss.add_argument("-u",  "--startstop",  action="store_true",  help="spin up/down")
     ss.add_argument("-n",  "--park",  action="store_true",  help="head parking")
 
-
-    nw = parser.add_argument_group(title="Network",
-                                   description="Available options for\
-                                   `network devices")
-
-    nw.add_argument("-l",  "--link",  action="store_true",
-                    help="network card link status")
-    nw.add_argument("-4",  "--ipv4",  action="store_true",
-                    help="IPv4 address")
-    nw.add_argument("-6",  "--ipv6",  action="store_true",
-                    help="IPv6 address")
-    nw.add_argument("-M",  "--mac",  action="store_true",
-                    help="hardware / MAC address")
-    nw.add_argument("-T",  "--show-type",  action="store_true",
-                    help="network card type")
-    nw.add_argument("-d",  "--driver",  action="store_true",
-                    help="driver module")
-    nw.add_argument("-F",  "--firmware-version",  action="store_true",
-                    help="firmware version")
-
+    nw = parser.add_argument_group(title="Network", description="Available options for `network devices")
+    nw.add_argument("-l",  "--link",  action="store_true", help="network card link status")
+    nw.add_argument("-4",  "--ipv4",  action="store_true", help="IPv4 address")
+    nw.add_argument("-6",  "--ipv6",  action="store_true", help="IPv6 address")
+    nw.add_argument("-M",  "--mac",  action="store_true", help="hardware / MAC address")
+    nw.add_argument("-T",  "--show-type",  action="store_true", help="network card type")
+    nw.add_argument("-d",  "--driver",  action="store_true", help="driver module")
+    nw.add_argument("-F",  "--firmware-version",  action="store_true", help="firmware version")
     return parser
 
 
@@ -118,32 +75,33 @@ def main():
     def get_table_header(args):
 
         header_options = (
-            ('model', 'Model', 'disk'),
-            ('serial', 'Serial Number', 'disk'),
-            ('state', 'State', 'disk'),
-            ('apm', 'APM', 'disk'),
-            ('size', 'GB', 'disk'),
-            ('speed', 'Gbps', 'disk'),
-            ('firmware', 'Firmware', 'disk'),
-            ('controller', 'Controller', 'disk'),
-            ('pcipath', '/dev/disk/by-path', 'disk'),
-            ('wwn', '/dev/disk/by-id/wwn*', 'disk'),
-            ('scsi', '/dev/disk/by-id/scsi*', 'disk'),
-            ('temp', 'Temp', 'disk'),
-            ('hours', 'Hours', 'disk'),
-            ('pending', 'PS', 'disk'),
-            ('reallocated', 'RS', 'disk'),
-            ('reallocatedevent', 'RSE', 'disk'),
-            ('crc', 'CRC', 'disk'),
-            ('startstop', 'Spin', 'disk'),
-            ('park', 'Park', 'disk'),
-            ('link', 'Link', 'net'),
-            ('ipv4', 'IPv4', 'net'),
-            ('ipv6', 'IPv6', 'net'),
-            ('mac', 'MAC', 'net'),
-            ('show_type', 'Type', 'net'),
-            ('driver', 'Driver', 'net'),
-            ('firmware_version', 'Firmware', 'net'))
+            ('type','Type', 'disk','l'),
+            ('model', 'Model', 'disk',"l"),
+            ('serial', 'Serial Number', 'disk',"l"),
+            ('state', 'State', 'disk',"r"),
+            ('apm', 'APM', 'disk',"r"),
+            ('size', 'GB', 'disk',"r"),
+            ('speed', 'Gbps', 'disk',"l"),
+            ('firmware', 'Firmware', 'disk',"l"),
+            ('controller', 'Controller', 'disk',"l"),
+            ('pcipath', '/dev/disk/by-path', 'disk',"l"),
+            ('wwn', '/dev/disk/by-id/wwn*', 'disk',"l"),
+            ('scsi', '/dev/disk/by-id/scsi*', 'disk',"l"),
+            ('temp', 'Temp', 'disk',"r"),
+            ('hours', 'Hours', 'disk',"r"),
+            ('pending', 'PS', 'disk',"r"),
+            ('reallocated', 'RS', 'disk',"r"),
+            ('reallocatedevent', 'RSE', 'disk',"r"),
+            ('crc', 'CRC', 'disk',"r"),
+            ('startstop', 'Spin', 'disk',"r"),
+            ('park', 'Park', 'disk',"r"),
+            ('link', 'Link', 'net',"r"),
+            ('ipv4', 'IPv4', 'net',"r"),
+            ('ipv6', 'IPv6', 'net',"r"),
+            ('mac', 'MAC', 'net',"r"),
+            ('show_type', 'Type', 'net',"r"),
+            ('driver', 'Driver', 'net',"r"),
+            ('firmware', 'Firmware', 'net',"r"))
 
         header = ['Dev']
 
@@ -153,7 +111,7 @@ def main():
                         if option[2] == args.devicetype:
                             header.append(option[1])
 
-        # print("Header " + str(header))
+        #print "Header " + str(header)
 
         return header
 
@@ -161,9 +119,10 @@ def main():
     table_header = get_table_header(args)
 
     for device in get_devices(devicetype):
-        devicedata = process_device(device, args)
-        if devicedata:
-            table_data.append(devicedata)
+        if not device.startswith("md") and not device.startswith("ram") and not device.startswith("loop"):
+            devicedata = process_device(device, args)
+            if devicedata:
+                table_data.append(devicedata)
 
     display_table(table_header, table_data, args)
 
@@ -183,8 +142,6 @@ def get_devices(devicetype):
 #
 # Get all network devices
 #
-
-
 def get_net_devices():
     netdevices = open('/proc/net/dev',  'r').readlines()
     return netdevices
@@ -203,12 +160,9 @@ def get_interfaces():
 #
 # Get all disk devices
 #
-
-
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
-    diskdevices = list(filter(lambda d: not d.startswith(("md", "ram", "loop", "dm")), diskdevices))
     diskdevices.sort()
     return diskdevices
 
@@ -238,6 +192,7 @@ def get_all_disk_wwns():
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE).communicate()[0]
     return disk_by_id_data
+
 
 def decode_data(data):
     decoded = None
@@ -287,19 +242,23 @@ def get_disk_scsi(diskdevice, diskbyiddata):
 
 def get_pci_device_name(diskdevice, pci_devices, diskbypathdata):
     deviceid = get_disk_deviceid(diskdevice, diskbypathdata)
-    devicename = generic_match_finder(deviceid, pci_devices, deviceid, 1, ":",
-                                      1)
+    devicename = generic_match_finder(deviceid, pci_devices, deviceid, 1, ":", 1)
     return devicename
 
-
-def get_disk_model(hdparmdata):
-    model = generic_match_finder("", hdparmdata, 'Model Number:', 1, ", ",
-                                 0)
+def get_disk_model(smartdata):
+    model = get_generic_parameter_from_smart(smartdata, "model")
     return model.strip()
 
+def get_disk_type(dev):
+    lookup = { "1":"HDD","0":"SDD"}
+    device = f"/sys/block/{dev}/queue/rotational"
+    with open(device,"r") as f:
+        value = f.read()
+    model = lookup[value.strip()]
+    return model.strip()
 
-def get_disk_serial(hdparmdata):
-    serial = generic_match_finder("", hdparmdata, 'Serial Number:', 1, ", ", 0)
+def get_disk_serial(smartdata):
+    serial = get_generic_parameter_from_smart(smartdata, "serial")
     return serial.strip()
 
 def get_disk_drivestate(hdparmdata):
@@ -310,36 +269,26 @@ def get_disk_apmstate(hdparmdata):
     apmstate = generic_match_finder("", hdparmdata, 'Advanced power management level:', 1, ", ", 0)
     return apmstate.strip()
 
-def get_fdisk_size(device):
-    command = "fdisk -l /dev/" + device
-    p = subprocess.Popen([command],  stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,  shell=True)
-    rawdata = p.communicate()
-    return rawdata[0]
+#def get_fdisk_size(device):
+#    command = "fdisk -l /dev/" + device
+#    p = subprocess.Popen([command],  stdout=subprocess.PIPE,
+#                         stderr=subprocess.PIPE,  shell=True)
+#    rawdata = p.communicate()
+#    return rawdata[0]
 
 
 def get_disk_speed(smartdata):
-    match = generic_match_finder("", smartdata, 'SATA Version is', 1, ":", 2)
-    return match.strip(')') 
+    returndata = get_generic_parameter_from_smart(smartdata, "speed")
+    return str(returndata) 
 
+def get_disk_size(smartdata):
+    rawdata = get_generic_parameter_from_smart(smartdata, "size")
+    returndata = round(float(rawdata) / 1000000000)
+    return str(returndata)
 
-def get_disk_size(dev):
-    data = get_fdisk_size(dev)
-    if data:
-        raw = generic_match_finder("", data, ", ", 1, ", ", 0)
-        bytes = raw.split(" ")[0]
-        #Patch for " "octects of last entry
-        gb = round(int(bytes) / 1000000000)
-        return str(gb)
-    else:
-        return ""
-
-
-def get_disk_firmware(hdparmdata):
-    match = generic_match_finder("", hdparmdata, 'Firmware Revision:', 1, ":",
-                                 0)
+def get_disk_firmware(smartdata):
+    match = get_generic_parameter_from_smart(smartdata, "firmware")
     return match.strip()
-
 
 def get_hdparm_data(device):
     command = "hdparm -IC " + device
@@ -352,67 +301,54 @@ def get_hdparm_data(device):
     if returncode == 127:
         raise OSError
     if returncode > 0:
-    	pass
+        pass
     return rawdata
 
 
 def get_disk_data(device):
-
     try:
         data = get_hdparm_data(device)
         return data[0]
     except IOError:
-        print("Error: Did you use sudo or are you root?")
+        print("Is hdparm installed or are you root / using sudo?")
         sys.exit(1)
-    except OSError:
-        print("Error: is hdparm installed?")
-    sys.exit(1)
-
 #
 # Processing of SMART DATA
 #
 
+def get_smart_attribute_from_json(json, attribute):
+    returndata = "?"
+    for item in json["ata_smart_attributes"]["table"]:
+        if item["name"] == attribute:
+            returndata = str(item["raw"]["value"])
+    return returndata
 
-def get_parameter_from_smart(data, parameter, distance):
-    data = item = decode_data(data)
-    regex = re.compile(parameter + '(.*)')
-    match = regex.search(data)
+def get_smart_conversion_dict():
+    conversion_dict = {
+        "temperature"               : ["temperature", "current"],
+        "model"                     : ["model_name"],
+        "firmware"                   : ["firmware_version"],
+        "size"                      : ["user_capacity", "bytes"],
+        "speed"                     : ["interface_speed","current","string"],
+        "serial"                    : ["serial_number"]
+    }
+    return conversion_dict
 
-    if match:
-            tmp = match.group(1)
-            length = len(tmp.split("   "))
-            if length <= distance:
-                distance = length-1
-
-            #
-            # SMART data is often a bit of a mess,  so this
-            # hack is used to cope with this.
-            #
-
-            try:
-                model = match.group(1).split("   ")[distance].split(" ")[1]
-            except:
-                model = match.group(1).split("   ")[distance+1].split(" ")[1]
-            return str(model)
-    return "?"
-
+def get_generic_parameter_from_smart(data, parameter):
+    table = get_smart_conversion_dict()
+    path = table[parameter]
+    returndata = data
+    for x in path:
+        try:
+            returndata = returndata[x]
+        except KeyError:
+            returndata = "?"
+            break
+    return str(returndata)
 
 def get_smart_data(device):
-
-    #
-    # For debugging purposes
-    #
     try:
-        file = os.environ['smartdata']
-        if os.path.isfile(file):
-            f = open(file,  'r')
-            data = f.read()
-            return data
-    except:
-        pass
-
-    try:
-        child = subprocess.Popen(['smartctl',  '-a',  '-d',  'ata',  device],
+        child = subprocess.Popen(['smartctl', '-j',  '-a',  '-d',  'ata',  device],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
     except OSError:
@@ -422,7 +358,7 @@ def get_smart_data(device):
     rawdata = child.communicate()
 
     if child.returncode:
-        child = subprocess.Popen(['smartctl',  '-a',  device],
+        child = subprocess.Popen(['smartctl', '-j',  '-a',  device],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         rawdata = child.communicate()
@@ -430,6 +366,10 @@ def get_smart_data(device):
             return ""
 
     smartdata = rawdata[0]
+    try:
+        smartdata = json.loads(smartdata)
+    except json.JSONDecodeError as e:
+        print("Invalid JSON syntax:", e)    
     return smartdata
 
 #
@@ -449,7 +389,6 @@ def get_interface_data(interface):
     raw_data = subprocess.Popen(['ip','a','show', interface],
                                 stdout=subprocess.PIPE).communicate()[0]
     return raw_data
-
 
 def get_driver_data(interface, parameter):
 
@@ -476,25 +415,21 @@ def get_interface_type(data):
 
 
 def is_smart_used(args):
-    if args.temp or args.all_opts:
-        return True
-    if args.hours or args.all_opts:
-        return True
-    if args.pending or args.all_opts:
-        return True
-    if args.reallocated or args.all_opts:
-        return True
-    if args.reallocatedevent or args.all_opts:
-        return True
-    if args.crc or args.all_opts:
-        return True
-    if args.startstop or args.all_opts:
-        return True
-    if args.park or args.all_opts:
-        return True
-    if args.speed or args.all_opts:
-        return True
-    return False
+
+    smart_args = [args.all_opts,  
+                  args.temp, 
+                  args.hours,
+                  args.pending,
+                  args.reallocated,
+                  args.reallocatedevent,
+                  args.crc,
+                  args.startstop,
+                  args.park,
+                  args.speed,
+                  args.type           
+                  ]
+
+    return any(smart_args)
 
 
 def process_device(dev, args):
@@ -512,10 +447,7 @@ def process_device(dev, args):
         fullpath = "/dev/" + dev
 
         diskdata = get_disk_data(fullpath)
-        disksize = get_disk_size(dev)
-        if not disksize:
-            return None
-
+        
         pci_devices = get_pci_devices()
         disk_paths = get_all_disk_paths()
         disk_wwns = get_all_disk_wwns()
@@ -523,12 +455,16 @@ def process_device(dev, args):
         if is_smart_used(args):
             disksmart = get_smart_data(fullpath)
 
+        if args.type or args.all_opts:
+            disktype = get_disk_type(dev)
+            devicedata.append(disktype)
+
         if args.model or args.all_opts:
-            diskmodel = get_disk_model(diskdata)
+            diskmodel = get_disk_model(disksmart)
             devicedata.append(diskmodel)
 
         if args.serial or args.all_opts:
-            diskserial = get_disk_serial(diskdata)
+            diskserial = get_disk_serial(disksmart)
             devicedata.append(diskserial)
 
         if args.state or args.all_opts:
@@ -540,6 +476,7 @@ def process_device(dev, args):
             devicedata.append(apmstate)
 
         if args.size or args.all_opts:
+            disksize = get_disk_size(disksmart)
             devicedata.append(disksize)
 
         if args.speed or args.all_opts:
@@ -547,7 +484,7 @@ def process_device(dev, args):
             devicedata.append(linkspeed)
 
         if args.firmware or args.all_opts:
-            diskfw = get_disk_firmware(diskdata)
+            diskfw = get_disk_firmware(disksmart)
             devicedata.append(diskfw)
 
         if args.controller or args.all_opts:
@@ -570,21 +507,23 @@ def process_device(dev, args):
         # SMART DATA
         #
 
+
+
         if args.temp or args.all_opts:
-            disktemp = get_parameter_from_smart(disksmart,
-                                                '(?:Temperature_Celsius|Airflow_Temperature_Cel)', 10)
+            disktemp = get_generic_parameter_from_smart(disksmart,
+                                                'temperature')
             devicedata.append(disktemp)
 
         if args.hours or args.all_opts:
-            diskpoweronhours = get_parameter_from_smart(disksmart,
-                                                        'Power_On_Hours', 12)
+            diskpoweronhours = get_smart_attribute_from_json(disksmart,
+                                                        'Power_On_Hours')
             devicedata.append(diskpoweronhours)
 
         if args.pending or args.all_opts:
-            match1 = get_parameter_from_smart(disksmart,
-                                              'Total_Pending_Sectors', 10)
-            match2 = get_parameter_from_smart(disksmart,
-                                              'Current_Pending_Sector', 10)
+            match1 = get_smart_attribute_from_json(disksmart,
+                                              'Total_Pending_Sectors')
+            match2 = get_smart_attribute_from_json(disksmart,
+                                              'Current_Pending_Sector')
 
             if match1:
                 diskcurrentpending = match1
@@ -596,39 +535,28 @@ def process_device(dev, args):
             devicedata.append(diskcurrentpending)
 
         if args.reallocated or args.all_opts:
-            diskreallocatedsector = \
-                get_parameter_from_smart(disksmart, 'Reallocated_Sector_Ct', 9)
+            diskreallocatedsector = get_smart_attribute_from_json(disksmart, 'Reallocated_Sector_Ct')
             devicedata.append(diskreallocatedsector)
 
         if args.reallocatedevent or args.all_opts:
-            diskreallocatedevent = \
-                get_parameter_from_smart(disksmart,
-                                         'Reallocated_Event_Count', 9)
+            diskreallocatedevent = get_smart_attribute_from_json(disksmart,"Reallocated_Event_Count")
             devicedata.append(diskreallocatedevent)
 
         if args.crc or args.all_opts:
-            diskudmacrcerror =\
-                get_parameter_from_smart(disksmart, 'UDMA_CRC_Error_Count',
-                                         10)
+            diskudmacrcerror = get_smart_attribute_from_json(disksmart, 'UDMA_CRC_Error_Count')
             devicedata.append(diskudmacrcerror)
 
         if args.startstop or args.all_opts:
-            diskstartstop =\
-                get_parameter_from_smart(disksmart, 'Start_Stop_Count',
-                                         10)
+            diskstartstop = get_smart_attribute_from_json(disksmart, 'Start_Stop_Count')
             devicedata.append(diskstartstop)
 
         if args.park or args.all_opts:
-            diskloadcycle =\
-                get_parameter_from_smart(disksmart, 'Load_Cycle_Count',
-                                         10)
+            diskloadcycle = get_smart_attribute_from_json(disksmart, 'Load_Cycle_Count')
             devicedata.append(diskloadcycle)
-
 
     #
     # Network data
     #
-
     elif args.devicetype == "net":
 
         raw_ifconfig = get_interface_data(dev)
@@ -636,8 +564,7 @@ def process_device(dev, args):
         raw_ethtool_extended = get_driver_data(dev, "")
 
         if args.link or args.all_opts:
-            link = search_data_for_match('Link\ detected:\ (\S+)',
-                                         raw_ethtool_extended)
+            link = search_data_for_match('Link\ detected:\ (\S+)', raw_ethtool_extended)
             devicedata.append(link)
 
         if args.ipv4 or args.all_opts:
@@ -661,8 +588,7 @@ def process_device(dev, args):
             devicedata.append(driver)
 
         if args.firmware_version or args.all_opts:
-            firmware = search_data_for_match('firmware-version:\ (\S+)',
-                                             raw_ethtool)
+            firmware = search_data_for_match('firmware-version:\ (\S+)', raw_ethtool)
             devicedata.append(firmware)
 
     else:
@@ -723,14 +649,12 @@ def display_table(table_header, table_data, args):
     # Some values to calculate the actual table with,  including spacing
     spacing = 1
     delimiter = 3
-    table_width = (sum(col_widths) + len(col_widths) * spacing * delimiter) - \
-        delimiter
+    table_width = (sum(col_widths) + len(col_widths) * spacing * delimiter) - delimiter
 
     format = ""
     for col in col_widths:
         if args.transparent:
             form = "  %-" + str(col) + "s "
-            format += form
         else:
             form = "| %-" + str(col) + "s "
             format += form
@@ -759,18 +683,6 @@ def display_table(table_header, table_data, args):
 
     if not args.transparent:
         print('%s' % '-'*table_width)
-
-    #if hdparm_error:
-    #    print "ERROR: hdparm not installed or not working!"
-
-#
-# Define table and add header as first row
-# The header also defines the table / collumn width
-#
-
-#
-# Main: get all devices and their data and display it in a table
-#
 
 if __name__ == "__main__":
     main()
