@@ -12,88 +12,47 @@ import os
 import argparse
 import json
 
-
 def set_arguments():
-
-    #
-    # Parse command line options
-    #
-
-    parser = argparse.ArgumentParser(description='Show detailed disk|net \
-                                device information in ASCII table format')
-    parser.add_argument('devicetype',  choices=['disk',  'net'],
-                        help="Show disk information")
+    parser = argparse.ArgumentParser(description='Show detailed disk|net device information in ASCII table format')
+    parser.add_argument('devicetype',  choices=['disk', 'net'], help="Show disk information")
 
     sa = parser.add_argument_group(title="Generic settings", description="Options that apply for all device types.")
-    sa.add_argument("-E",  "--transparent",
-                    action="store_true",  help="Disable table formatting (no lines)")
-    sa.add_argument("-g",  "--noheader",
-                    action="store_true",  help="Disable table header (in transparent mode)")
+    sa.add_argument("-E",  "--transparent", action="store_true", help="Disable table formatting (no lines)")
+    sa.add_argument("-g",  "--noheader", action="store_true",  help="Disable table header (in transparent mode)")
 
-    sg = parser.add_argument_group(title="Storage (generic)",
-                                   description="Generic\
-                                    options for storage devices")
-    sg.add_argument("-a",  "--all-opts",
-                    action="store_true",  help="show all information")
-    sg.add_argument("-m",  "--model",
-                    action="store_true",  help="device model")
-    sg.add_argument("-S",  "--serial",
-                    action="store_true",  help="device serial number")
-    sg.add_argument("-D",  "--state",  action="store_true",
-                    help="drive power status (active/standby)")
-    sg.add_argument("-e",  "--apm",  action="store_true",
-                    help="Advanced Power Mode")
-    sg.add_argument("-s",  "--size",
-                    action="store_true",  help="device size in Gigabytes")
-    sg.add_argument("-z",  "--speed",  action="store_true",  help="SATA Link in Gbps")
-    sg.add_argument("-f",  "--firmware",  action="store_true",
-                    help="device firmware version")
-    sg.add_argument("-c",  "--controller",  action="store_true",
-                    help="controller to which device is connected")
-    sg.add_argument("-p",  "--pcipath",  action="store_true",
-                    help="/dev/disk/by-path/ ID of the device")
-    sg.add_argument("-w",  "--wwn",  action="store_true",
-                    help="device World Wide Name")
-    sg.add_argument("-o",  "--scsi",  action="store_true",
-                    help="/dev/by-id/scsi")
+    sg = parser.add_argument_group(title="Storage (generic)", description="Generic options for storage devices")
+    sg.add_argument("-a",  "--all-opts", action="store_true",  help="show all information")
+    sg.add_argument("-m",  "--model",action="store_true", help="device model")
+    sg.add_argument("-k",  "--type",action="store_true", help="device type (HDD/SDD)")
+    sg.add_argument("-S",  "--serial",action="store_true", help="device serial number")
+    sg.add_argument("-D",  "--state", action="store_true", help="drive power status (active/standby)")
+    sg.add_argument("-e",  "--apm", action="store_true", help="Advanced Power Mode")
+    sg.add_argument("-s",  "--size", action="store_true", help="device size in Gigabytes")
+    sg.add_argument("-z",  "--speed", action="store_true", help="SATA Link in Gbps")
+    sg.add_argument("-f",  "--firmware", action="store_true", help="device firmware version")
+    sg.add_argument("-c",  "--controller",  action="store_true", help="controller to which device is connected")
+    sg.add_argument("-p",  "--pcipath",  action="store_true", help="/dev/disk/by-path/ ID of the device")
+    sg.add_argument("-w",  "--wwn",  action="store_true", help="device World Wide Name")
+    sg.add_argument("-o",  "--scsi",  action="store_true", help="/dev/by-id/scsi")
 
-    ss = parser.add_argument_group(title="Storage (SMART)",  description=
-                                   "Options based on SMART values of storage\
-                                     devices")
-    ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature\
-                    in Celcius")
-    ss.add_argument("-H",  "--hours",  action="store_true",  help="power on\
-                    hours")
-    ss.add_argument("-P",  "--pending",  action="store_true",  help="pendinag\
-                    sector count")
-    ss.add_argument("-r",  "--reallocated",  action="store_true",  help=
-                    "reallocated sector count")
-    ss.add_argument("-R",  "--reallocatedevent",  action="store_true",  help=
-                    "reallocated sector event count")
+    ss = parser.add_argument_group(title="Storage (SMART)",  description="Options based on SMART values of storage devices")
+    ss.add_argument("-t",  "--temp",  action="store_true",  help="temperature in Celcius")
+    ss.add_argument("-H",  "--hours",  action="store_true",  help="power on hours")
+    ss.add_argument("-P",  "--pending",  action="store_true",  help="pending sector count")
+    ss.add_argument("-r",  "--reallocated",  action="store_true",  help="reallocated sector count")
+    ss.add_argument("-R",  "--reallocatedevent",  action="store_true",  help="reallocated sector event count")
     ss.add_argument("-C",  "--crc",  action="store_true",  help="CRC error")
     ss.add_argument("-u",  "--startstop",  action="store_true",  help="spin up/down")
     ss.add_argument("-n",  "--park",  action="store_true",  help="head parking")
 
-
-    nw = parser.add_argument_group(title="Network",
-                                   description="Available options for\
-                                   `network devices")
-
-    nw.add_argument("-l",  "--link",  action="store_true",
-                    help="network card link status")
-    nw.add_argument("-4",  "--ipv4",  action="store_true",
-                    help="IPv4 address")
-    nw.add_argument("-6",  "--ipv6",  action="store_true",
-                    help="IPv6 address")
-    nw.add_argument("-M",  "--mac",  action="store_true",
-                    help="hardware / MAC address")
-    nw.add_argument("-T",  "--show-type",  action="store_true",
-                    help="network card type")
-    nw.add_argument("-d",  "--driver",  action="store_true",
-                    help="driver module")
-    nw.add_argument("-F",  "--firmware-version",  action="store_true",
-                    help="firmware version")
-
+    nw = parser.add_argument_group(title="Network", description="Available options for `network devices")
+    nw.add_argument("-l",  "--link",  action="store_true", help="network card link status")
+    nw.add_argument("-4",  "--ipv4",  action="store_true", help="IPv4 address")
+    nw.add_argument("-6",  "--ipv6",  action="store_true", help="IPv6 address")
+    nw.add_argument("-M",  "--mac",  action="store_true", help="hardware / MAC address")
+    nw.add_argument("-T",  "--show-type",  action="store_true", help="network card type")
+    nw.add_argument("-d",  "--driver",  action="store_true", help="driver module")
+    nw.add_argument("-F",  "--firmware-version",  action="store_true", help="firmware version")
     return parser
 
 
@@ -116,6 +75,7 @@ def main():
     def get_table_header(args):
 
         header_options = (
+            ('type','Type', 'disk','l'),
             ('model', 'Model', 'disk',"l"),
             ('serial', 'Serial Number', 'disk',"l"),
             ('state', 'State', 'disk',"r"),
@@ -282,15 +242,20 @@ def get_disk_scsi(diskdevice, diskbyiddata):
 
 def get_pci_device_name(diskdevice, pci_devices, diskbypathdata):
     deviceid = get_disk_deviceid(diskdevice, diskbypathdata)
-    devicename = generic_match_finder(deviceid, pci_devices, deviceid, 1, ":",
-                                      1)
+    devicename = generic_match_finder(deviceid, pci_devices, deviceid, 1, ":", 1)
     return devicename
-
 
 def get_disk_model(smartdata):
     model = get_generic_parameter_from_smart(smartdata, "model")
     return model.strip()
 
+def get_disk_type(dev):
+    lookup = { "1":"HDD","0":"SDD"}
+    device = f"/sys/block/{dev}/queue/rotational"
+    with open(device,"r") as f:
+        value = f.read()
+    model = lookup[value.strip()]
+    return model.strip()
 
 def get_disk_serial(smartdata):
     serial = get_generic_parameter_from_smart(smartdata, "serial")
@@ -345,12 +310,8 @@ def get_disk_data(device):
         data = get_hdparm_data(device)
         return data[0]
     except IOError:
-        print("Error: Did you use sudo or are you root?")
+        print("Is hdparm installed or are you root / using sudo?")
         sys.exit(1)
-    except OSError:
-        print("Error: is hdparm installed?")
-    sys.exit(1)
-
 #
 # Processing of SMART DATA
 #
@@ -429,7 +390,6 @@ def get_interface_data(interface):
                                 stdout=subprocess.PIPE).communicate()[0]
     return raw_data
 
-
 def get_driver_data(interface, parameter):
 
     if parameter:
@@ -465,7 +425,8 @@ def is_smart_used(args):
                   args.crc,
                   args.startstop,
                   args.park,
-                  args.speed           
+                  args.speed,
+                  args.type           
                   ]
 
     return any(smart_args)
@@ -493,6 +454,10 @@ def process_device(dev, args):
 
         if is_smart_used(args):
             disksmart = get_smart_data(fullpath)
+
+        if args.type or args.all_opts:
+            disktype = get_disk_type(dev)
+            devicedata.append(disktype)
 
         if args.model or args.all_opts:
             diskmodel = get_disk_model(disksmart)
@@ -570,37 +535,28 @@ def process_device(dev, args):
             devicedata.append(diskcurrentpending)
 
         if args.reallocated or args.all_opts:
-            diskreallocatedsector = \
-                get_smart_attribute_from_json(disksmart, 'Reallocated_Sector_Ct')
+            diskreallocatedsector = get_smart_attribute_from_json(disksmart, 'Reallocated_Sector_Ct')
             devicedata.append(diskreallocatedsector)
 
         if args.reallocatedevent or args.all_opts:
             diskreallocatedevent = get_smart_attribute_from_json(disksmart,"Reallocated_Event_Count")
-            #diskreallocatedevent = \
-            #    get_parameter_from_smart(disksmart,
-            #                             'Reallocated_Event_Count', 9)
             devicedata.append(diskreallocatedevent)
 
         if args.crc or args.all_opts:
-            diskudmacrcerror =\
-                get_smart_attribute_from_json(disksmart, 'UDMA_CRC_Error_Count')
+            diskudmacrcerror = get_smart_attribute_from_json(disksmart, 'UDMA_CRC_Error_Count')
             devicedata.append(diskudmacrcerror)
 
         if args.startstop or args.all_opts:
-            diskstartstop =\
-                get_smart_attribute_from_json(disksmart, 'Start_Stop_Count')
+            diskstartstop = get_smart_attribute_from_json(disksmart, 'Start_Stop_Count')
             devicedata.append(diskstartstop)
 
         if args.park or args.all_opts:
-            diskloadcycle =\
-                get_smart_attribute_from_json(disksmart, 'Load_Cycle_Count')
+            diskloadcycle = get_smart_attribute_from_json(disksmart, 'Load_Cycle_Count')
             devicedata.append(diskloadcycle)
-
 
     #
     # Network data
     #
-
     elif args.devicetype == "net":
 
         raw_ifconfig = get_interface_data(dev)
@@ -608,8 +564,7 @@ def process_device(dev, args):
         raw_ethtool_extended = get_driver_data(dev, "")
 
         if args.link or args.all_opts:
-            link = search_data_for_match('Link\ detected:\ (\S+)',
-                                         raw_ethtool_extended)
+            link = search_data_for_match('Link\ detected:\ (\S+)', raw_ethtool_extended)
             devicedata.append(link)
 
         if args.ipv4 or args.all_opts:
@@ -633,8 +588,7 @@ def process_device(dev, args):
             devicedata.append(driver)
 
         if args.firmware_version or args.all_opts:
-            firmware = search_data_for_match('firmware-version:\ (\S+)',
-                                             raw_ethtool)
+            firmware = search_data_for_match('firmware-version:\ (\S+)', raw_ethtool)
             devicedata.append(firmware)
 
     else:
@@ -695,8 +649,7 @@ def display_table(table_header, table_data, args):
     # Some values to calculate the actual table with,  including spacing
     spacing = 1
     delimiter = 3
-    table_width = (sum(col_widths) + len(col_widths) * spacing * delimiter) - \
-        delimiter
+    table_width = (sum(col_widths) + len(col_widths) * spacing * delimiter) - delimiter
 
     format = ""
     for col in col_widths:
@@ -730,18 +683,6 @@ def display_table(table_header, table_data, args):
 
     if not args.transparent:
         print('%s' % '-'*table_width)
-
-    #if hdparm_error:
-    #    print "ERROR: hdparm not installed or not working!"
-
-#
-# Define table and add header as first row
-# The header also defines the table / collumn width
-#
-
-#
-# Main: get all devices and their data and display it in a table
-#
 
 if __name__ == "__main__":
     main()
