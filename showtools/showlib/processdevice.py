@@ -1,7 +1,6 @@
 
 from rich import print as print
 from . import (
-    smart,
     network,
     disk
 )

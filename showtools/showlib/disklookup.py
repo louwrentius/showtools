@@ -24,6 +24,9 @@ def device_options_table(dev, hdparmdata, smartdata):
     disk_paths = get_all_disk_paths()
     disk_ids = get_all_disk_ids()
     lookup = {
+        "device":{"value": dev,
+                 "justify": "left"
+                 },
         "model":{"value": diskattr.get_disk_model(smartdata),
                  "justify": "left"
                  },

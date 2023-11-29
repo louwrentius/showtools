@@ -11,7 +11,9 @@ from .showlib import (
     displaytable as table,
     disk,
     network,
+    netattr,
     argparsing,
+
 )
 
 def get_devices(devicetype):
