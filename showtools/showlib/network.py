@@ -19,7 +19,7 @@ def process_lookup(lookup, args):
     devicedata = {}
     for k, v in lookup.items():
         addoption = False
-        if args["generic_settings"]["all_opts"]: 
+        if "all_opts" in args["generic_settings"].keys(): 
             addoption = True
         elif k in args["network"].keys():
             addoption = True

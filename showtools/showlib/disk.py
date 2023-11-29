@@ -41,7 +41,7 @@ def process_lookup(lookup, args):
     devicedata = {}
     for k, v in lookup.items():
         addoption = False
-        if args["generic_settings"]["all_opts"]: 
+        if "all_opts" in args["generic_settings"].keys(): 
             addoption = True
         elif k in args["storage_generic"].keys() or k in args["storage_smart"].keys():
             addoption = True

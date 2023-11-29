@@ -5,24 +5,10 @@ import json
 
 def is_smart_used(args):
 
-    if args["generic_settings"]["all_opts"]:
+    if "all_opts" in args["generic_settings"].keys():
         return True
-
-    smart_args = [ 
-                  args["storage_smart"]["temp"], 
-                  args["storage_smart"]["hours"],
-                  args["storage_smart"]["pending"],
-                  args["storage_smart"]["reallocated"],
-                  args["storage_smart"]["reallocatedevent"],
-                  args["storage_smart"]["crc"],
-                  args["storage_smart"]["startstop"],
-                  args["storage_smart"]["park"],
-                  args["storage_smart"]["speed"],
-                  args["storage_smart"]["type"]           
-                ]
     
-    return any(smart_args) or args["generic_settings"]["all_opts"]
-
+    return any(args["storage_smart"].keys())
 
 def get_smart_data(device):
     try:
