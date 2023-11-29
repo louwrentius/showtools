@@ -24,65 +24,65 @@ def device_options_table(dev, hdparmdata, smartdata):
     disk_paths = get_all_disk_paths()
     disk_ids = get_all_disk_ids()
     lookup = {
-        "model":{"func": diskattr.get_disk_model(smartdata),
+        "model":{"value": diskattr.get_disk_model(smartdata),
                  "justify": "left"
                  },
-        "type":{"func": diskattr.get_disk_type(dev),
+        "type":{"value": diskattr.get_disk_type(dev),
                  "justify": "center"
                  },
-        "serial":{"func": diskattr.get_disk_model(smartdata),
+        "serial":{"value": diskattr.get_disk_model(smartdata),
                  "justify": "left"
                  },
-        "state":{"func": diskattr.get_disk_drivestate(hdparmdata),
+        "state":{"value": diskattr.get_disk_drivestate(hdparmdata),
                  "justify": "left"
                  },
-        "apm":{"func": diskattr.get_disk_apmstate(hdparmdata),
+        "apm":{"value": diskattr.get_disk_apmstate(hdparmdata),
                  "justify": "left"
                  },
-        "size":{"func": smart.get_disk_size(smartdata),
+        "size":{"value": smart.get_disk_size(smartdata),
                  "justify": "left"
                  },
-        "speed":{"func": smart.get_disk_speed(smartdata),
+        "speed":{"value": smart.get_disk_speed(smartdata),
                  "justify": "left"
                  },
-        "firmware":{"func": smart.get_disk_firmware(smartdata),
+        "firmware":{"value": smart.get_disk_firmware(smartdata),
                  "justify": "left"
                  },
-        "controller":{"func": diskattr.get_pci_device_name(dev, pci_devices, disk_paths),
+        "controller":{"value": diskattr.get_pci_device_name(dev, pci_devices, disk_paths),
                  "justify": "left"
                  },
-        "pcipath":{"func": diskattr.get_disk_path(dev, disk_paths),
+        "pcipath":{"value": diskattr.get_disk_path(dev, disk_paths),
                  "justify": "left"
                  },
-        "wwn":{"func": diskattr.get_disk_wwn(dev, disk_ids),
+        "wwn":{"value": diskattr.get_disk_wwn(dev, disk_ids),
                  "justify": "left"
                  },
-        "scsi":{"func": diskattr.get_disk_scsi(dev, disk_ids),
+        "scsi":{"value": diskattr.get_disk_scsi(dev, disk_ids),
                  "justify": "left"
                  },
-        "temp":{"func": smart.get_generic_parameter_from_smart(smartdata, 'temperature'),
+        "temp":{"value": smart.get_generic_parameter_from_smart(smartdata, 'temperature'),
                  "justify": "left"
                  },
-        "hours":{"func": smart.get_smart_attribute_from_json(smartdata, 'Power_On_Hours'),
+        "hours":{"value": smart.get_smart_attribute_from_json(smartdata, 'Power_On_Hours'),
                  "justify": "left"
                  },
-        "pending":{"func": smart.get_pending_sectors(smartdata),
+        "pending":{"value": smart.get_pending_sectors(smartdata),
                  "justify": "left"
                  },
-        "reallocated":{"func": smart.get_smart_attribute_from_json(smartdata, 'Reallocated_Sector_Ct'),
+        "reallocated":{"value": smart.get_smart_attribute_from_json(smartdata, 'Reallocated_Sector_Ct'),
                  "justify": "left"
                  },
-        "reallocatedevent":{"func": smart.get_smart_attribute_from_json(smartdata,"Reallocated_Event_Count"),
+        "reallocatedevent":{"value": smart.get_smart_attribute_from_json(smartdata,"Reallocated_Event_Count"),
                  "justify": "left"
                  },
 
-        "crc":{"func": smart.get_smart_attribute_from_json(smartdata, 'UDMA_CRC_Error_Count'),
+        "crc":{"value": smart.get_smart_attribute_from_json(smartdata, 'UDMA_CRC_Error_Count'),
                  "justify": "left"
                  },
-        "startstop":{"func": smart.get_smart_attribute_from_json(smartdata, 'Start_Stop_Count'),
+        "startstop":{"value": smart.get_smart_attribute_from_json(smartdata, 'Start_Stop_Count'),
                  "justify": "left"
                  },
-        "park":{"func": smart.get_smart_attribute_from_json(smartdata, 'Load_Cycle_Count'),
+        "park":{"value": smart.get_smart_attribute_from_json(smartdata, 'Load_Cycle_Count'),
                  "justify": "left"
                  },
     }

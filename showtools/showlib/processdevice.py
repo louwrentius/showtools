@@ -19,7 +19,6 @@ def process_devices(args, devicetype, devices):
     lookuptable = get_function_lookup_table()
     for device in devices:
         devicedata.append(lookuptable[devicetype](device, args))
-    print(devicedata)
     return devicedata
    
 
