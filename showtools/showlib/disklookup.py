@@ -43,10 +43,10 @@ def device_options_table(dev, hdparmdata, smartdata):
                  "justify": "left"
                  },
         "size":{"value": smart.get_disk_size(smartdata),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "speed":{"value": smart.get_disk_speed(smartdata),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "firmware":{"value": smart.get_disk_firmware(smartdata),
                  "justify": "left"
@@ -64,29 +64,29 @@ def device_options_table(dev, hdparmdata, smartdata):
                  "justify": "left"
                  },
         "temp":{"value": smart.get_generic_parameter_from_smart(smartdata, 'temperature'),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "hours":{"value": smart.get_smart_attribute_from_json(smartdata, 'Power_On_Hours'),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "pending":{"value": smart.get_pending_sectors(smartdata),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "reallocated":{"value": smart.get_smart_attribute_from_json(smartdata, 'Reallocated_Sector_Ct'),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "reallocatedevent":{"value": smart.get_smart_attribute_from_json(smartdata,"Reallocated_Event_Count"),
-                 "justify": "left"
+                 "justify": "right"
                  },
 
         "crc":{"value": smart.get_smart_attribute_from_json(smartdata, 'UDMA_CRC_Error_Count'),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "startstop":{"value": smart.get_smart_attribute_from_json(smartdata, 'Start_Stop_Count'),
-                 "justify": "left"
+                 "justify": "right"
                  },
         "park":{"value": smart.get_smart_attribute_from_json(smartdata, 'Load_Cycle_Count'),
-                 "justify": "left"
+                 "justify": "right"
                  },
     }
     return lookup
