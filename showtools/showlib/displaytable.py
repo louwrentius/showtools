@@ -6,6 +6,7 @@ def display(tabledata, args):
     headerdata = get_header()
     table = Table()
     columnorder = []
+
     for k, v in tabledata[0].items():
         column = headerdata[k]
         table.add_column(column, justify=v["justify"],no_wrap=True)
@@ -15,7 +16,6 @@ def display(tabledata, args):
         rowdata = []
         for column in columnorder:
             rowdata.append(f"{row[column]['value']}")
-
         table.add_row(*rowdata)
     
     console = Console()

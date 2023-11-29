@@ -18,7 +18,7 @@ def get_all_disk_ids():
                                        stderr=subprocess.PIPE).communicate()[0]
     return disk_by_id_data
 
-def device_options_table(dev, hdparmdata, smartdata):
+def device_options_table(dev, hdparmdata, smartdata=None):
     dev = os.path.basename(dev)
     pci_devices = diskattr.get_pci_devices()
     disk_paths = get_all_disk_paths()

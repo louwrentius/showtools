@@ -15,8 +15,8 @@ def get_interfaces():
         interfaces.sort()
     return interfaces
 
-def process_lookup(lookup, args):
-    devicedata = {}
+def process_lookup(lookup, args, dev):
+    devicedata = { "device": { "value": dev, "justify": "left"}}
     for k, v in lookup.items():
         addoption = False
         if "all_opts" in args["generic_settings"].keys(): 
@@ -29,7 +29,7 @@ def process_lookup(lookup, args):
 
 def get_network_device_data(dev, args):
     lookup = netlookup.device_options_table(dev)
-    devicedata = process_lookup(lookup, args)
+    devicedata = process_lookup(lookup, args, dev)
     return devicedata
 
 

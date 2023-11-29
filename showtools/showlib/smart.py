@@ -2,14 +2,6 @@ import sys
 import subprocess
 import json
 
-
-def is_smart_used(args):
-
-    if "all_opts" in args["generic_settings"].keys():
-        return True
-    
-    return any(args["storage_smart"].keys())
-
 def get_smart_data(device):
     try:
         child = subprocess.Popen(['smartctl', '-j',  '-a',  '-d',  'ata',  device],

@@ -37,13 +37,13 @@ def get_hdparm_data(device):
     return rawdata
 
 
-def process_lookup(lookup, args):
-    devicedata = {}
+def process_lookup(lookup, args, dev):
+    devicedata = { "device": { "value": dev, "justify": "left"}}
     for k, v in lookup.items():
         addoption = False
         if "all_opts" in args["generic_settings"].keys(): 
             addoption = True
-        elif k in args["storage_generic"].keys() or k in args["storage_smart"].keys():
+        elif k in args["storage"].keys():
             addoption = True
         if addoption:
             devicedata[k] = v
@@ -53,8 +53,7 @@ def get_disk_device_data(dev, args):
     fullpath = "/dev/" + dev
     hdparmdata = get_hdparm_data(fullpath)
     hdparmdata = diskattr.decode_data(hdparmdata[0])
-    if smart.is_smart_used(args):
-        smartdata = smart.get_smart_data(fullpath)
+    smartdata = smart.get_smart_data(fullpath)
     lookup = disklookup.device_options_table(fullpath, hdparmdata, smartdata)
-    devicedata = process_lookup(lookup, args)
+    devicedata = process_lookup(lookup, args, dev)
     return devicedata
