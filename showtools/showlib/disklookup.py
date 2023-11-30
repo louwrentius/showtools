@@ -27,11 +27,11 @@ def device_options_table(dev, hdparmdata, smartdata=None):
         "device":{"value": dev,
                  "justify": "left"
                  },
-        "model":{"value": diskattr.get_disk_model(smartdata),
-                 "justify": "left"
-                 },
         "type":{"value": diskattr.get_disk_type(dev),
                  "justify": "center"
+                 },
+        "model":{"value": diskattr.get_disk_model(smartdata),
+                 "justify": "left"
                  },
         "serial":{"value": diskattr.get_disk_model(smartdata),
                  "justify": "left"

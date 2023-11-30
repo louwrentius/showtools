@@ -12,7 +12,7 @@ Show information about network interfaces:
 
 ![network][netw]
 
-[netw]: http://louwrentius.com/static/images/shownet.png
+[netw]: http://louwrentius.com/static/images/showtools/shownet.png
 
 Show SMART information about disks:
 
@@ -22,13 +22,13 @@ Show SMART information about disks:
 
 ![showdisk01][1]
 
-[1]: http://louwrentius.com/static/images/showdisk01.png
+[1]: http://louwrentius.com/static/images/showtools/showdisk01.png
 
 Show /dev/disk/by-\* information:
 
 ![showdisk02][2]
 
-[2]: http://louwrentius.com/static/images/showdisk02.png
+[2]: http://louwrentius.com/static/images/showtools/showdisk02.png
 
 Usage:
 ```
