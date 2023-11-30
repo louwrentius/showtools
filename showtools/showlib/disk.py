@@ -26,19 +26,22 @@ def get_hdparm_data(device):
         p = subprocess.Popen([command],  stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,  shell=True)
         rawdata = p.communicate()
+
+        returncode = p.returncode
+
+        if returncode == 13:
+            raise IOError
+        if returncode == 127:
+            raise OSError
+        if returncode > 0:
+            pass
+
     except OSError:
         print("Is hdparm installed or are you root / using sudo?")
         sys.exit(1)
-
-    returncode = p.returncode
-
-    if returncode == 13:
-        raise IOError
-    if returncode == 127:
-        raise OSError
-    if returncode > 0:
-        pass
-
+    except IOError:
+        print(f"Possible I/O error on device {device}")
+        sys.exit(1)
     return rawdata
 
 
