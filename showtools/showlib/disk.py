@@ -8,11 +8,17 @@ from . import (
     disklookup
 )
 
+
+
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
     diskdevices.sort()
-    return diskdevices
+    validdevices = []
+    for device in diskdevices:
+        if not device.startswith("md") and not device.startswith("ram") and not device.startswith("loop"):
+            validdevices.append(device)
+    return validdevices
 
 
 def get_hdparm_data(device):
@@ -21,7 +27,7 @@ def get_hdparm_data(device):
         p = subprocess.Popen([command],  stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,  shell=True)
         rawdata = p.communicate()
-    except IOError:
+    except OSError:
         print("Is hdparm installed or are you root / using sudo?")
         sys.exit(1)
 
