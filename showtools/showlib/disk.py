@@ -13,8 +13,9 @@ def get_block_devices():
     diskdevices = os.listdir(devicepath)
     diskdevices.sort()
     validdevices = []
+    invaliddevices = ("md","ram","loop","sr")
     for device in diskdevices:
-        if not device.startswith("md") and not device.startswith("ram") and not device.startswith("loop"):
+        if not device.startswith(invaliddevices):
             validdevices.append(device)
     return validdevices
 
