@@ -1,9 +1,3 @@
-# Generates graphs from FIO output data for various IO queue depthts
-#
-# Output in PNG format.
-#
-# Requires matplotib and numpy.
-#
 import sys
 from rich import print as print
 from .showlib import (
@@ -11,9 +5,7 @@ from .showlib import (
     displaytable as table,
     disk,
     network,
-    netattr,
     argparsing,
-
 )
 
 def get_devices(devicetype):

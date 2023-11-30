@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
         name="showtools",
-        version="2.0.0",
+        version="2.0.1",
         author="louwrentius",
         description="Show storage and network devices in table format on cli",
         long_description=long_description,
@@ -14,10 +14,10 @@ setuptools.setup(
         packages=setuptools.find_packages(),
         install_requires=['rich'],
         include_package_data=True,
-        package_data={},
+        package_data={ 'showtools' },
         entry_points = {
             'console_scripts': [
-                'show = show:main',
+                'show = showtools:main',
             ],
         },
         scripts=['bin/show'],
