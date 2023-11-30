@@ -23,7 +23,7 @@ Show SMART information about disks:
 
 [1]: http://louwrentius.com/static/images/showtools/showdisk01.png
 
-Show /dev/disk/by-\* information:
+This is the output for a 24-drive NAS. You can zoom in by clicking on the image.
 
 ![showdisk02][2]
 
