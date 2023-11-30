@@ -40,7 +40,7 @@ Manual install:
 
 1. clone this repository with git clone https://github.com/louwrentius/showtools
 2. cd showtools
-3. python3 setup.py 
+3. python3 setup.py install
 4. install hdparm, smartmontools and ethtool
 
     apt install hdparm smartmontools ethtool
