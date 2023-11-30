@@ -1,5 +1,4 @@
 # showtools
-
 This tool displays information about disks or network cards in a nice
 ASCII table format on the command line. 
 
@@ -30,7 +29,16 @@ Show /dev/disk/by-\* information:
 
 [2]: http://louwrentius.com/static/images/showtools/showdisk02.png
 
-Usage:
+### Installation
+
+1. clone this repository with git clone https://github.com/louwrentius/showtools
+2. cd showtools
+3. python3 setup.py 
+4. install hdparm, smartmontools and ethtool
+
+    apt install hdparm smartmontools ethtool
+
+### Usage:
 ```
 usage: show [-h] [-E] [-g] [-a] [-m] [-k] [-S] [-D] [-e] [-s] [-z] [-f] [-c] [-p] [-w] [-o] [-t] [-H] [-P] [-r] [-R] [-C] [-u] [-n] [-l] [-4] [-6] [-M] [-T] [-d] [-F] {disk,net}
 
@@ -42,16 +50,16 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
 
-Generic settings:
+generic_settings:
   Options that apply for all device types.
 
   -E, --transparent     Disable table formatting (no lines)
   -g, --noheader        Disable table header (in transparent mode)
+  -a, --all-opts        show all information
 
-Storage (generic):
+storage:
   Generic options for storage devices
 
-  -a, --all-opts        show all information
   -m, --model           device model
   -k, --type            device type (HDD/SDD)
   -S, --serial          device serial number
@@ -64,10 +72,6 @@ Storage (generic):
   -p, --pcipath         /dev/disk/by-path/ ID of the device
   -w, --wwn             device World Wide Name
   -o, --scsi            /dev/by-id/scsi
-
-Storage (SMART):
-  Options based on SMART values of storage devices
-
   -t, --temp            temperature in Celcius
   -H, --hours           power on hours
   -P, --pending         pending sector count
@@ -78,8 +82,8 @@ Storage (SMART):
   -u, --startstop       spin up/down
   -n, --park            head parking
 
-Network:
-  Available options for `network devices
+network:
+  Available options for network devices
 
   -l, --link            network card link status
   -4, --ipv4            IPv4 address
