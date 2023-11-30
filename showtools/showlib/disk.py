@@ -8,8 +8,6 @@ from . import (
     disklookup
 )
 
-
-
 def get_block_devices():
     devicepath = "/sys/block"
     diskdevices = os.listdir(devicepath)
